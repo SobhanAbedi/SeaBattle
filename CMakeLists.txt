@@ -7,4 +7,4 @@ include_directories(./include)
 link_directories(./lib)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
-add_executable(SeaBattle main.c)
+add_executable(SeaBattle main.c src/Board.c include/Board.h)
