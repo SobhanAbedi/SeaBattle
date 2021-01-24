@@ -67,7 +67,9 @@ struct config* get_conf()
 struct location_ext* get_location_ext(struct location *loc)
 {
     struct location_ext* loc_ext = (struct location_ext*)malloc(sizeof(struct location_ext));
-    int dx_list[] = {1, 0, -1, 0}, dy_list[] = {0, 1, 0, -1};
+    loc_ext->x = loc->x;
+    loc_ext->y = loc->y;
+    int dx_list[] = {1, 0, -1, 0}, dy_list[] = {0, -1, 0, 1};
     loc_ext->dx_len = dx_list[loc->dir];
     loc_ext->dy_len = dy_list[loc->dir];
     loc_ext->dx_wid = dx_list[(loc->dir + 1) % 4];
@@ -78,7 +80,6 @@ struct location_ext* get_location_ext(struct location *loc)
 bool can_place_ship(struct house** square, int board_size, struct ship_tmp *ship, struct location_ext *loc)
 {
     int x, y;
-    printf("%d, %d\n", ship->wid, ship->len);
     for(int i = -1; i < ship->wid + 1; i++)
         for(int j = -1; j < ship->len + 1; j++) {
             x = loc->x + i * loc->dx_wid + j * loc->dx_len;
