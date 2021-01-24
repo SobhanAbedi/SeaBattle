@@ -6,6 +6,7 @@
 #define SEABATTLE_BOARD_H
 
 #include <stdbool.h>
+#include "Config.h"
 
 //structs declaration
 struct ship_tmp;
@@ -14,18 +15,15 @@ struct location_ext;
 struct ship_list;
 struct house;
 struct board;
-struct config_ship_list;
-struct config;
 
 //functions declaration
 struct ship_tmp* init_ship_tmp(int len, int wid, int points);
-struct config_ship_list* init_config_ship_list(struct ship_tmp *ship, int count);
 struct ship_list* init_ship_list(struct ship_tmp *ship, struct location *ploc);
-struct config* get_conf();
 struct location_ext* get_location_ext(struct location *loc);
 bool can_place_ship(struct house** square, int board_size, struct ship_tmp *ship, struct location_ext *loc);
 bool place_ship(struct house** square, int board_size, struct ship_list *ship);
-struct board* init_board(struct config *conf);
+struct board* init_board();
+void disp_board_fast(struct board *brd);
 bool destroy_ship_list(struct ship_list *ship);
 bool destroy_board(struct board *brd);
 
@@ -58,17 +56,6 @@ struct board{
     struct ship_list *afloat_ships, *sunken_ships;
     int size;
     struct house **square;
-};
-
-struct config_ship_list{
-    struct config_ship_list *next;
-    struct ship_tmp *ship;
-    int count;
-};
-
-struct config{
-    int board_size;
-    struct config_ship_list *ship_list;
 };
 
 #endif //SEABATTLE_BOARD_H

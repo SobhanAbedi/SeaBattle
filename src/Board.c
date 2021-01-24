@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Board.h"
+#include "Config.h"
 
 struct ship_tmp* init_ship_tmp(int len, int wid, int points)
 {
@@ -13,15 +14,6 @@ struct ship_tmp* init_ship_tmp(int len, int wid, int points)
     ship->wid = wid;
     ship->points = points;
     return ship;
-}
-
-struct config_ship_list* init_config_ship_list(struct ship_tmp *ship, int count)
-{
-    struct config_ship_list *list = (struct config_ship_list*)malloc(sizeof(struct config_ship_list));
-    list->next = NULL;
-    list->ship = ship;
-    list->count = count;
-    return list;
 }
 
 struct ship_list* init_ship_list(struct ship_tmp *ship, struct location *ploc)
@@ -43,25 +35,6 @@ struct ship_list* init_ship_list(struct ship_tmp *ship, struct location *ploc)
             list->health[i][j] = true;
     }
     return list;
-}
-
-struct config* get_conf()
-{
-    int len[] = {5, 3, 2, 1}, wid[] = {1, 1, 1, 1}, points[] = {5, 8, 12, 25}, count[] = {1, 2, 3, 4};
-    struct ship_tmp **ships = (struct ship_tmp**)malloc(4 * sizeof(struct ship_tmp*));
-    for(int i = 0; i < 4; i++)
-        ships[i] = init_ship_tmp(len[i], wid[i], points[i]);
-
-    struct config_ship_list *list_beg = init_config_ship_list(NULL, 0), *cur = list_beg;
-    for(int i = 0; i < 4; i++){
-        cur->next = init_config_ship_list(ships[i], count[i]);
-        cur = cur->next;
-    }
-    struct config *conf;
-    conf = (struct config*)malloc(sizeof(struct config));
-    conf->board_size = 10;
-    conf->ship_list = list_beg;
-    return conf;
 }
 
 struct location_ext* get_location_ext(struct location *loc)
@@ -115,12 +88,12 @@ bool place_ship(struct house** square, int board_size, struct ship_list *ship)
     return 1;
 }
 
-struct board* init_board(struct config *conf)
+struct board* init_board()
 {
-    //struct config *conf = get_conf();
+    struct config *conf = get_conf();
     //Start get location
     int x[] = {0, 2, 2, 4, 4, 4, 6, 6, 6, 6};
-    int y[] = {0, 0, 5, 0, 3, 6, 0, 2, 4, 6};
+    int y[] = {0, 0, 4, 0, 3, 6, 0, 2, 4, 6};
     //dir: 0->0deg, 1->90deg, 2->180deg, 3->270deg
     int dir[10] = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
     struct location loc = {-1, -1, -1};
@@ -159,6 +132,23 @@ struct board* init_board(struct config *conf)
         cur_list = cur_list->next;
     }
     return brd;
+}
+
+void disp_board_fast(struct board *brd)
+{
+    for(int i = 0; i < brd->size; i++){
+        for(int j = 0; j < brd->size; j++){
+            if(brd->square[i][j].is_ship)
+                printf("S");
+            else
+                printf("W");
+            if(brd->square[i][j].is_visible)
+                printf(".");
+            else
+                printf(" ");
+        }
+        printf("\n");
+    }
 }
 
 bool destroy_ship_list(struct ship_list *list)
