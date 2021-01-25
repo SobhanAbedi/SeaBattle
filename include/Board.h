@@ -17,13 +17,17 @@ struct house;
 struct board;
 
 //functions declaration
-struct ship_tmp* init_ship_tmp(int len, int wid, int points);
-struct ship_list* init_ship_list(struct ship_tmp *ship, struct location *ploc);
+struct ship_tmp* new_ship_tmp(int len, int wid, int points);
+struct ship_list* new_ship_list_ent(struct ship_tmp *ship, struct location *ploc);
 struct location_ext* get_location_ext(struct location *loc);
 bool can_place_ship(struct house** square, int board_size, struct ship_tmp *ship, struct location_ext *loc);
 bool place_ship(struct house** square, int board_size, struct ship_list *ship);
+void make_visible_around_sunken_ship(struct board *brd, struct ship_list *ent);
+int check_afloat_ships(struct board *brd);
+struct ship_list* copy_ship_list(struct ship_list *list1);
+bool rem_ship_list_ent(struct ship_list *pre);
 struct board* init_board();
-void disp_board_fast(struct board *brd);
+void disp_board_fast(struct board *brd, bool debug);
 bool destroy_ship_list(struct ship_list *ship);
 bool destroy_board(struct board *brd);
 
@@ -49,7 +53,7 @@ struct ship_list{
 
 struct house{
     bool is_ship, is_visible;
-    bool *health;
+    bool *is_afloat, *health;
 };
 
 struct board{

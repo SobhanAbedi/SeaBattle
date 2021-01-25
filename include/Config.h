@@ -11,8 +11,8 @@
 struct config_ship_list;
 struct config;
 
-//functions
-struct config_ship_list* init_config_ship_list(struct ship_tmp *ship, int count);
+//functions declaration
+struct config_ship_list* new_config_ship_list_ent(struct ship_tmp *ship, int count);
 struct config* get_conf();
 
 //structs definition

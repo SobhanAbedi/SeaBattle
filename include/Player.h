@@ -9,18 +9,31 @@
 #include "Config.h"
 #define NAME_LEN 64
 //structs declaration
+struct identity;
 struct player;
 
-//functions
+//functions declaration
+struct identity* get_player(int other_player_ID);
+void disp_identity_fast(struct identity *iden);
 struct player* init_player();
+void disp_player_fast(struct player *pl);
 
 //structs definition
-struct player
+
+struct identity
 {
     char name[NAME_LEN];
+    int ID;
     int total_games, won_games, lost_games;
     //int open_games = total_games - won_games - lost_games;
+    int points;
+};
+
+struct player
+{
+    struct identity *iden;
     struct board *brd;
+    int points;
 };
 
 #endif //SEABATTLE_PLAYER_H
