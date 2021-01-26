@@ -18,6 +18,7 @@ bool save_player(struct player *pl, bool has_won);
 void disp_identity_fast(struct identity *iden);
 struct player* init_player(int other_player_ID);
 void disp_player_fast(struct player *pl);
+void disp_top5_players();
 
 //structs definition
 

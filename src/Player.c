@@ -110,3 +110,42 @@ void disp_player_fast(struct player *pl)
     printf("Current Game: %d Points\n", pl->points);
     disp_board_fast(pl->brd, 1);
 }
+
+void disp_top5_players()
+{
+    int n = 5;
+    FILE *fin = fopen("../resources/players/players", "rb");
+    if(fin == NULL) {
+        FILE *fout = fopen("../resources/players/players", "wb");
+        fclose(fout);
+        fin = fopen("../resources/players/players", "rb");
+        if(fin == NULL){
+            printf("Could Not Open Players File\n");
+            return;
+        }
+        printf("There are no player yet\n");
+        return;
+    }
+    struct identity *iden_list = (struct identity*)malloc(n * sizeof(struct identity));
+    struct identity *iden_read = (struct identity*)malloc(sizeof(struct identity));
+    for(int i = 0; i < n; i++){
+        iden_list[i].ID = -1;
+    }
+    while(fread(iden_read, sizeof(struct identity), 1, fin)){
+        for(int i = 0; i < n; i++){
+            if(iden_read->points > iden_list[i].points || iden_list[i].ID == -1){
+                for(int j = n - 1; j > i; j--){
+                    iden_list[j] = iden_list[j - 1];
+                }
+                iden_list[i] = *iden_read;
+                break;
+            }
+        }
+    }
+    for(int i = 0; i < n && iden_list[i].ID != -1; i++){
+        printf("Player %d:\n", i + 1);
+        disp_identity_fast(&(iden_list[i]));
+    }
+    free(iden_list);
+    free(iden_read);
+}
