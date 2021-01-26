@@ -38,7 +38,7 @@ struct config_ship_list* new_config_ship_list_ent(struct ship_tmp *ship, int cou
 
 void destroy_config_ship_list(struct config_ship_list *list)
 {
-    while(list->next != NULL)
+    if(list->next != NULL)
         destroy_config_ship_list(list->next);
     list->next = NULL;
     free(list);
@@ -80,5 +80,6 @@ struct config* get_conf()
     }
     conf->board_size = size;
     conf->ship_list = list_beg;
+    cur = list_beg->next;
     return conf;
 }

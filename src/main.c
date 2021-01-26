@@ -10,7 +10,7 @@ int main() {
     //printf("Looks All Right\n");
     //struct ship_tmp **ships_tmp = get_ship_tmps();
     init_systems();
-    struct player *pl1 = init_player(), *pl2 = init_player();
+    struct player *pl1 = init_player(-1), *pl2 = init_player(pl1->iden->ID);
     disp_player_fast(pl1);
     disp_player_fast(pl2);
     run_game_pvp(pl1, pl2);

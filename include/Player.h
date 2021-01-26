@@ -14,8 +14,9 @@ struct player;
 
 //functions declaration
 struct identity* get_player(int other_player_ID);
+bool save_player(struct player *pl, bool has_won);
 void disp_identity_fast(struct identity *iden);
-struct player* init_player();
+struct player* init_player(int other_player_ID);
 void disp_player_fast(struct player *pl);
 
 //structs definition

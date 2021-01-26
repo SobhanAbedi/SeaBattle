@@ -45,6 +45,8 @@ bool play_player(struct player *offensive_pl, struct player *defensive_pl )
             offensive_pl->points += sink_points;
             if(defensive_pl->brd->afloat_ships->next == NULL){
                 printf("You Won :D\n");
+                if(save_player(offensive_pl, 1) && save_player(defensive_pl, 0))
+                    printf("Players Results Saved\n");
                 return true;
             }
         }
