@@ -199,22 +199,25 @@ struct board* init_board()
     struct config_ship_list *cur_list = conf->ship_list->next;
     int k = 0;
     while(cur_list != NULL) {
-        for(int i = 0; i < cur_list->count; i++){
-            loc.x = x[k];
-            loc.y = y[k];
-            loc.dir = dir[k];
-            k++;
-            cur_ship->next = new_ship_list_ent(cur_list->ship, &loc);
-            cur_ship = cur_ship->next;
-            if(!place_ship(brd->square, brd->size, cur_ship)){
-                printf("Could not Initiate Board\n");
-                destroy_board(brd);
-                brd = NULL;
-                return NULL;
+        if(cur_list->count != 0) {
+            for (int i = 0; i < cur_list->count; i++) {
+                loc.x = x[k];
+                loc.y = y[k];
+                loc.dir = dir[k];
+                k++;
+                cur_ship->next = new_ship_list_ent(cur_list->ship, &loc);
+                cur_ship = cur_ship->next;
+                if (!place_ship(brd->square, brd->size, cur_ship)) {
+                    printf("Could not Initiate Board\n");
+                    destroy_board(brd);
+                    brd = NULL;
+                    return NULL;
+                }
             }
         }
         cur_list = cur_list->next;
     }
+    destroy_config_ship_list(conf->ship_list);
     return brd;
 }
 
