@@ -13,12 +13,14 @@ struct identity;
 struct player;
 
 //functions declaration
-struct identity* get_player(int other_player_ID);
-bool save_player(struct player *pl, bool has_won);
+struct identity* get_identity(int other_player_ID);
+struct identity* load_identity(int ID);
+bool save_identity(struct player *pl, int has_won);
 void disp_identity_fast(struct identity *iden);
 struct player* init_player(int other_player_ID);
 void disp_player_fast(struct player *pl);
 void disp_top5_players();
+bool write_player2file(struct player *pl, FILE *fout);
 
 //structs definition
 

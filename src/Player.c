@@ -9,7 +9,7 @@
 #include "Player.h"
 #include "Board.h"
 
-struct identity* get_player(int other_player_ID)
+struct identity* get_identity(int other_player_ID)
 {
     FILE *fin = fopen("../resources/players/players", "rb");
     if(fin == NULL){
@@ -32,7 +32,7 @@ struct identity* get_player(int other_player_ID)
             if(iden->ID == other_player_ID){
                 printf("You cant play against yourself\n");
                 fclose(fin);
-                return get_player(other_player_ID);
+                return get_identity(other_player_ID);
             }
             iden->total_games++;
             disp_identity_fast(iden);
@@ -61,7 +61,32 @@ struct identity* get_player(int other_player_ID)
     return iden;
 }
 
-bool save_player(struct player *pl, bool has_won)
+struct identity* load_identity(int ID)
+{
+    FILE *fin = fopen("../resources/players/players", "rb");
+    if(fin == NULL){
+        FILE *fout = fopen("../resources/players/players", "wb");
+        fclose(fout);
+        fin = fopen("../resources/players/players", "rb");
+        if(fin == NULL){
+            printf("Could Not Open File\n");
+            return NULL;
+        }
+        return NULL;
+    }
+    struct identity *iden = (struct identity*)malloc(sizeof(struct identity));
+    while(fread(iden, sizeof(struct identity), 1, fin)){
+        if(iden->ID == ID){
+            fclose(fin);
+            return iden;
+        }
+    }
+    free(iden);
+    fclose(fin);
+    return NULL;
+}
+
+bool save_identity(struct player *pl, int has_won)
 {
     FILE *fp = fopen("../resources/players/players", "r+b");
     if(fp == NULL){
@@ -72,10 +97,10 @@ bool save_player(struct player *pl, bool has_won)
     while (fread(tmp_iden, sizeof(struct identity), 1, fp)){
         if(tmp_iden->ID == pl->iden->ID){
             fseek(fp, (-1l) * sizeof(struct identity), SEEK_CUR);
-            if(has_won){
+            if(has_won == 1){
                 pl->iden->points += pl->points;
                 pl->iden->won_games++;
-            } else{
+            } else if(has_won == 0){
                 pl->iden->points += pl->points/2;
                 pl->iden->lost_games++;
             }
@@ -98,7 +123,7 @@ void disp_identity_fast(struct identity *iden)
 struct player* init_player(int other_player_ID)
 {
     struct player *pl = (struct player*)malloc(sizeof(struct player));
-    pl->iden = get_player(other_player_ID);
+    pl->iden = get_identity(other_player_ID);
     pl->brd = init_board();
     pl->points = 0;
     return pl;
@@ -148,4 +173,11 @@ void disp_top5_players()
     }
     free(iden_list);
     free(iden_read);
+}
+
+bool write_player2file(struct player *pl, FILE *fout)
+{
+    if(fwrite(&(pl->iden->ID), sizeof(int), 1, fout) == 1 && write_board2file(pl->brd, fout))
+        return true;
+    return false;
 }

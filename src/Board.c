@@ -7,12 +7,12 @@
 #include "Board.h"
 #include "Config.h"
 
-struct ship_tmp* new_ship_tmp(int len, int wid, int points)
+struct ship_tmp new_ship_tmp(int len, int wid, int points)
 {
-    struct ship_tmp *ship = (struct ship_tmp*)malloc(sizeof(struct ship_tmp));
-    ship->len = len;
-    ship->wid = wid;
-    ship->points = points;
+    struct ship_tmp ship;
+    ship.len = len;
+    ship.wid = wid;
+    ship.points = points;
     return ship;
 }
 
@@ -217,6 +217,51 @@ struct board* init_board()
     }
     destroy_config_ship_list(conf->ship_list);
     return brd;
+}
+
+bool write_ship_list2file(struct ship_list *list, FILE *fout)
+{
+    struct ship_tmp *ship_temps = get_ship_temps();
+    struct ship_list *cur = list->next;
+    int count = 0;
+    while (cur != NULL) {
+        count++;
+        cur = cur->next;
+    }
+    if(fwrite(&count, sizeof(int), 1, fout) == 0)
+        return false;
+    cur = list->next;
+    while(cur != NULL) {
+        int index = cur->ship - ship_temps;
+        if(fwrite(&index, sizeof(int), 1, fout) == 0)
+            return false;
+        if(fwrite(&(cur->loc), sizeof(struct location), 1, fout) == 0)
+            return false;
+        if(fwrite(&(cur->is_afloat), sizeof(bool), 1, fout) == 0)
+            return false;
+        for(int i = 0; i < cur->ship->wid; i++)
+            if(fwrite(cur->health[i], sizeof(bool), cur->ship->len, fout) < cur->ship->len)
+                return false;
+        cur = cur->next;
+    }
+    return true;
+}
+
+bool write_house2file(struct board *brd, FILE *fout)
+{
+    for(int i = 0 ; i < brd->size; i++)
+        for(int j = 0; j < brd->size; j++)
+            if(fwrite(&(brd->square[i][j].is_visible), sizeof(bool), 1, fout) == 0)
+                return false;
+
+}
+
+bool write_board2file(struct board *brd, FILE *fout)
+{
+    if(fwrite(&(brd->size), sizeof(int), 1, fout) == 1 && write_house2file(brd, fout)
+        && write_ship_list2file(brd->afloat_ships, fout) && write_ship_list2file(brd->sunken_ships, fout))
+        return true;
+    return false;
 }
 
 void disp_board_fast(struct board *brd, bool debug)

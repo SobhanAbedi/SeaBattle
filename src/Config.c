@@ -7,7 +7,7 @@
 #include "Board.h"
 
 //File Specific Global Variable
-struct ship_tmp **ships_tmp;
+struct ship_tmp *ship_tmps;
 
 //function definitions
 void init_ship_tmps()
@@ -15,9 +15,9 @@ void init_ship_tmps()
     static bool is_first = true;
     if(is_first) {
         int len[] = {7, 6, 5, 4, 4, 3, 2, 1}, wid[] = {2, 1, 1, 1, 1, 1, 1, 1}, points[] = {5, 6, 7, 9, 9, 12, 17, 35};
-        ships_tmp = (struct ship_tmp**)malloc(sizeof(struct ship_tmp));
+        ship_tmps = (struct ship_tmp*)malloc(SHIP_COUNT * sizeof(struct ship_tmp));
         for (int i = 0; i < SHIP_COUNT; i++)
-            ships_tmp[i] = new_ship_tmp(len[i], wid[i], points[i]);
+            ship_tmps[i] = new_ship_tmp(len[i], wid[i], points[i]);
         is_first = false;
     }
 }
@@ -57,6 +57,11 @@ void restore_conf()
     fclose(fout);
 }
 
+struct ship_tmp* get_ship_temps()
+{
+    return ship_tmps;
+}
+
 struct config* get_conf()
 {
     int size, count[8];
@@ -75,11 +80,10 @@ struct config* get_conf()
     struct config *conf = (struct config*)malloc(sizeof(struct config));
     struct config_ship_list *list_beg = new_config_ship_list_ent(NULL, 0), *cur = list_beg;
     for(int i = 0; i < SHIP_COUNT; i++){
-        cur->next = new_config_ship_list_ent(ships_tmp[i], count[i]);
+        cur->next = new_config_ship_list_ent(&(ship_tmps[i]), count[i]);
         cur = cur->next;
     }
     conf->board_size = size;
     conf->ship_list = list_beg;
-    cur = list_beg->next;
     return conf;
 }

@@ -8,7 +8,7 @@ int main() {
     //struct config *conf = get_conf();
     //struct board *brd1 = init_board(conf);
     //printf("Looks All Right\n");
-    //struct ship_tmp **ships_tmp = get_ship_tmps();
+    //struct ship_tmp **ship_tmps = get_ship_tmps();
     init_systems();
     disp_top5_players();
     struct player *pl1 = init_player(-1), *pl2 = init_player(pl1->iden->ID);
@@ -18,5 +18,5 @@ int main() {
     disp_player_fast(pl1);
     disp_player_fast(pl2);
     disp_top5_players();
-    return 0;
+     return 0;
 }
