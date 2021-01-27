@@ -87,3 +87,8 @@ struct config* get_conf()
     conf->ship_list = list_beg;
     return conf;
 }
+
+void close_systems()
+{
+    free(ship_tmps);
+}

@@ -7,9 +7,10 @@
 #include <string.h>
 #include "Board.h"
 #include "Player.h"
+#include "Android.h"
 #include "Mechanism.h"
 
-
+#define MAX_SAVE_SIZE 5000
 
 int hit(struct board *brd, int x, int y)
 {
@@ -35,7 +36,7 @@ int hit(struct board *brd, int x, int y)
     return 0;
 }
 
-int play_player(struct player *offensive_pl, struct player *defensive_pl )
+int play_player(struct player *offensive_pl, struct player *defensive_pl)
 {
     int x, y, res, sink_points;
     do{
@@ -98,26 +99,59 @@ int get_first_free_int()
     return LUI + 1;
 }
 
-bool save_game(struct player *offensive_pl, struct player *defensive_pl)
+bool save_enactor(void *en, bool is_bot, FILE *fout)
 {
-    FILE *meta_fout = fopen("../resources/saves/meta", "ab");
-    FILE *fout = fopen("../resources/saves/saves", "ab");
-    if(fout == NULL || meta_fout == NULL) {
-        printf("Could Not Open File\n");
-        return false;
+    if(is_bot)
+        return write_bot2file((struct android*)en, fout);
+    return write_player2file((struct player*)en, fout);
+}
+
+void* load_enactor(bool is_bot, int *points, FILE *fin)
+{
+    printf("load_enactor\n");
+    if(is_bot)
+        return read_bot_from_file(points, fin);
+    return read_player_from_file(points, fin);
+}
+
+bool save_game(struct player *offensive_pl, void *defensive, bool is_pvp)
+{
+    if(is_pvp){
+        struct player *defensive_pl = (struct player*)defensive;
+    } else{
+        struct bot *defensive_bot = (struct bot*)defensive;
     }
     int save_id = get_first_free_int();
+    FILE *meta_fout = fopen("../resources/saves/meta", "r+b");
+    FILE *fout = fopen("../resources/saves/saves", "r+b");
+    if(fout == NULL || meta_fout == NULL){
+        meta_fout = fopen("../resources/saves/meta", "wb");
+        fout = fopen("../resources/saves/saves", "wb");
+        fclose(meta_fout);
+        fclose(fout);
+        meta_fout = fopen("../resources/saves/meta", "r+b");
+        fout = fopen("../resources/saves/saves", "r+b");
+        if(fout == NULL || meta_fout == NULL){
+            printf("Could Not Open File\n");
+            return false;
+        }
+    }
+    fseek(meta_fout, 0, SEEK_END);
+    fseek(fout, 0, SEEK_END);
     long beg_loc = ftell(fout), end_loc;
     struct meta *met = (struct meta*)malloc(sizeof(struct meta));
     met->ID = save_id;
+    met->is_pvp = is_pvp;
     printf("Enter save name: (Default: Save %d)\n", save_id);
     fflush(stdin);
     gets(met->save_name);
     if(met->save_name[0] == 0)
         sprintf(met->save_name, "Save %d", save_id);
-    if(write_player2file(defensive_pl, fout) && write_player2file(offensive_pl, fout)){
+    if(save_enactor(offensive_pl, false, fout) && save_enactor(defensive, !is_pvp, fout)){
         end_loc = ftell(fout);
         met->size = end_loc - beg_loc;
+        if(met->size > MAX_SAVE_SIZE)
+            printf("MAX_SAVE_SIZE EXCEEDED\n");
         if(fwrite(met, sizeof(struct meta), 1, meta_fout)) {
             fclose(fout);
             fclose(meta_fout);
@@ -125,15 +159,167 @@ bool save_game(struct player *offensive_pl, struct player *defensive_pl)
             return true;
         } else
             printf("Could Not Save Meta\n");
-    }
+    } else
+        printf("Could Not Save The Game\n");
     fclose(fout);
     fclose(meta_fout);
     free(met);
     return false;
 }
 
+bool show_saves(bool verbose)
+{
+    FILE *fin = fopen("../resources/saves/meta", "rb");
+    if(fin == NULL){
+        FILE  *fout = fopen("../resources/saves/meta", "wb");
+        fclose(fout);
+        fin = fopen("../resources/saves/meta", "rb");
+        if(fin == NULL){
+            printf("Could Not Load Saves Meta File\n");
+            return false;
+        }
+        fclose(fin);
+        printf("There are no saves\n");
+        return false;
+    }
+    bool not_empty = false;
+    struct meta *met = (struct meta*)malloc(sizeof(struct meta));
+    while(fread(met, sizeof(struct meta), 1, fin)){
+        printf("%s", met->save_name);
+        not_empty = true;
+        if(verbose) {
+            if(met->is_pvp)
+                printf("\tPVP");
+            else
+                printf("\tSingle Player");
+            printf("\t%d\t%ld", met->ID, met->size);
+        }
+        printf("\n");
+    }
+    free(met);
+    fclose(fin);
+    if(!not_empty)
+        printf("There are no saves\n");
+    return not_empty;
+}
+
+void load_game()
+{
+    //printf("Game Saves:\n");
+    if(!show_saves(false))
+        return;
+    char name[NAME_LEN];
+    printf("Enter Name to Load the Saved Game:\n");
+    fflush(stdin);
+    gets(name);
+    rename("../resources/saves/saves", "../resources/saves/0_saves");
+    rename("../resources/saves/meta",  "../resources/saves/0_meta");
+    FILE *fin_meta = fopen("../resources/saves/0_meta", "rb");
+    FILE *fin = fopen("../resources/saves/0_saves", "rb");
+    FILE *fout_meta = fopen("../resources/saves/meta", "wb");
+    FILE *fout = fopen("../resources/saves/saves", "wb");
+    if(fin == NULL || fin_meta == NULL ){
+        if(fout == NULL || fout_meta == NULL){
+            printf("Could Not Open The Save File\n");
+            return;
+        }
+        printf("There are no saved games. (weird)\n");
+        fclose(fout_meta);
+        fclose(fout);
+        remove("../resources/saves/0_saves");
+        remove("../resources/saves/0_meta");
+        return;
+    }
+    //printf("loaded correctly\n");
+    struct meta *met = (struct meta*)malloc(sizeof(struct meta));
+    char *temp_str = (char*)malloc(MAX_SAVE_SIZE * sizeof(char));
+    bool found = false;
+    while(fread(met, sizeof(struct meta), 1, fin_meta)){
+        if(strcmp(met->save_name, name) == 0) {
+            found = true;
+            break;
+        }
+        if(fwrite(met, sizeof(struct meta), 1, fout_meta) == 0 ||
+                fread(temp_str, sizeof(char), met->size, fin) < met->size ||
+                fwrite(temp_str, sizeof(char), met->size, fout) < met->size) {
+            printf("Could not transfer the Save Files\n");
+            fclose(fin);
+            fclose(fin_meta);
+            fclose(fout);
+            fclose(fout_meta);
+            remove("../resources/saves/saves");
+            remove("../resources/saves/meta");
+            rename("../resources/saves/0_saves", "../resources/saves/saves");
+            rename("../resources/saves/0_meta",  "../resources/saves/meta");
+            return;
+        }
+    }
+    if(!found){
+        printf("A saved game with entered named does not exist\n");
+        fclose(fin);
+        fclose(fin_meta);
+        fclose(fout);
+        fclose(fout_meta);
+        remove("../resources/saves/0_saves");
+        remove("../resources/saves/0_meta");
+        return;
+    }
+    int points_pl1 = 0, points_pl2 = 0;
+    struct player *pl1 = load_enactor(false, &points_pl2, fin);
+    struct player *pl2 = load_enactor(!met->is_pvp, &points_pl1, fin);
+    if(pl1 == NULL || pl2 == NULL){
+        printf("Could Not Load Players\n");
+        destroy_player(pl1);
+        destroy_player(pl2);
+        fclose(fin);
+        fclose(fin_meta);
+        fclose(fout);
+        fclose(fout_meta);
+        remove("../resources/saves/saves");
+        remove("../resources/saves/meta");
+        rename("../resources/saves/0_saves", "../resources/saves/saves");
+        rename("../resources/saves/0_meta",  "../resources/saves/meta");
+        return;
+    }
+    pl1->points = points_pl1;
+    pl2->points = points_pl2;
+
+    while(fread(met, sizeof(struct meta), 1, fin_meta)){
+        if(fwrite(met, sizeof(struct meta), 1, fout_meta) == 0 ||
+           fread(temp_str, sizeof(char), met->size, fin) < met->size ||
+           fwrite(temp_str, sizeof(char), met->size, fout) < met->size) {
+            printf("Could not transfer the Save Files\n");
+            fclose(fin);
+            fclose(fin_meta);
+            fclose(fout);
+            fclose(fout_meta);
+            remove("../resources/saves/saves");
+            remove("../resources/saves/meta");
+            rename("../resources/saves/0_saves", "../resources/saves/saves");
+            rename("../resources/saves/0_meta",  "../resources/saves/meta");
+            return;
+        }
+    }
+    fclose(fin);
+    fclose(fin_meta);
+    fclose(fout);
+    fclose(fout_meta);
+    remove("../resources/saves/0_saves");
+    remove("../resources/saves/0_meta");
+    if(met->is_pvp)
+        run_game_pvp(pl1, pl2);
+}
+
+void init_game_pvp()
+{
+    struct player *pl1 = init_player(-1), *pl2 = init_player(pl1->iden->ID);
+    run_game_pvp(pl1, pl2);
+}
+
 void run_game_pvp(struct player *pl1, struct player *pl2)
 {
+    disp_player_fast(pl1);
+    disp_player_fast(pl2);
     struct player *offensive_pl, *defensive_pl, *tmp_pl;
     offensive_pl = pl2;
     defensive_pl = pl1;
@@ -149,11 +335,12 @@ void run_game_pvp(struct player *pl1, struct player *pl2)
         printf("Do you want to save the game? (No:0, Yes:1) ");
         scanf("%d", &choice);
         if(choice){
-            if(save_identity(pl1, -1) && save_identity(pl2, -1) && save_game(offensive_pl, defensive_pl))
+            if(save_identity(pl1, -1) && save_identity(pl2, -1) && save_game(offensive_pl, defensive_pl, true))
                 printf("Game Saved\n");
             else
                 printf("Could Not Save The Game");
         }
     }
-
+    destroy_player(pl1);
+    destroy_player(pl2);
 }

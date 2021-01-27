@@ -5,20 +5,29 @@
 #ifndef SEABATTLE_MECHANISM_H
 #define SEABATTLE_MECHANISM_H
 
-//structs declaration
+//struct declarations
 struct meta;
 
-//functions declaration
+//function declarations
 int hit(struct board *brd, int x, int y);
-int play_player(struct player *offensive_pl, struct player *defensive_pl );
+int play_player(struct player *offensive_pl, struct player *defensive_pl);
+int get_first_free_int();
+bool save_enactor(void *en, bool is_bot, FILE *fout);
+void* load_enactor(bool is_bot, int *points, FILE *fin);
+bool save_game(struct player *offensive_pl, void *defensive, bool is_pvp);
+bool show_saves(bool verbose);
+void load_game();
+void init_game_pvp();
 void run_game_pvp(struct player *pl1, struct player *pl2);
 
-//structs definition
+
+//struct definitions
 struct meta
 {
     int ID;
     char save_name[NAME_LEN];
-    int size;
+    bool is_pvp;
+    long size;
 };
 
 #endif //SEABATTLE_MECHANISM_H

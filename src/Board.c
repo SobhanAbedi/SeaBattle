@@ -81,7 +81,6 @@ bool place_ship(struct house** square, int board_size, struct ship_list *ship)
             x = loc->x + i * loc->dx_wid + j * loc->dx_len;
             y = loc->y + i * loc->dy_wid + j * loc->dy_len;
             square[y][x].is_ship = 1;
-            square[y][x].is_visible = 0;
             square[y][x].health = &(ship->health[i][j]);
             square[y][x].is_afloat = &(ship->is_afloat);
         }
@@ -239,12 +238,57 @@ bool write_ship_list2file(struct ship_list *list, FILE *fout)
             return false;
         if(fwrite(&(cur->is_afloat), sizeof(bool), 1, fout) == 0)
             return false;
-        for(int i = 0; i < cur->ship->wid; i++)
-            if(fwrite(cur->health[i], sizeof(bool), cur->ship->len, fout) < cur->ship->len)
-                return false;
+        if(cur->is_afloat) {
+            for (int i = 0; i < cur->ship->wid; i++)
+                if (fwrite(cur->health[i], sizeof(bool), cur->ship->len, fout) < cur->ship->len)
+                    return false;
+        }
         cur = cur->next;
     }
     return true;
+}
+
+struct ship_list* read_ship_list_from_file(struct board *brd, int *points, FILE *fin)
+{
+    int count;
+    if(fread(&count, sizeof(int), 1, fin) == 0)
+        return NULL;
+    struct ship_tmp *ship_temps = get_ship_temps();
+    struct location loc = {-1, -1, -1};
+    struct ship_list *list_beg = new_ship_list_ent(NULL, &loc), *cur = list_beg;
+    int index;
+    for(int i = 0; i < count; i++){
+        if(fread(&index, sizeof(int), 1, fin) == 0 || fread(&loc, sizeof(struct location), 1, fin) == 0){
+            destroy_ship_list(list_beg);
+            list_beg = NULL;
+            return list_beg;
+        }
+        cur->next = new_ship_list_ent(&(ship_temps[index]), &loc);
+        cur = cur->next;
+        if(fread(&(cur->is_afloat), sizeof(bool), 1, fin) == 0){
+            destroy_ship_list(list_beg);
+            list_beg = NULL;
+            return list_beg;
+        }
+        if(cur->is_afloat){
+            for (int j = 0; j < cur->ship->wid; j++) {
+                if (fread(cur->health[j], sizeof(bool), cur->ship->len, fin) < cur->ship->len) {
+                    destroy_ship_list(list_beg);
+                    list_beg = NULL;
+                    return list_beg;
+                }
+                for(int k = 0; k < cur->ship->len; k++)
+                    *points += (!cur->health[j][k]);
+            }
+        } else {
+            for(int j = 0; j < cur->ship->wid; j++)
+                for(int k = 0; k < cur->ship->len; k++)
+                    cur->health[j][k] = false;
+            *points += ((cur->ship->wid) * (cur->ship->len)) + cur->ship->points;
+        }
+        place_ship(brd->square, brd->size, cur);
+    }
+    return list_beg;
 }
 
 bool write_house2file(struct board *brd, FILE *fout)
@@ -253,7 +297,26 @@ bool write_house2file(struct board *brd, FILE *fout)
         for(int j = 0; j < brd->size; j++)
             if(fwrite(&(brd->square[i][j].is_visible), sizeof(bool), 1, fout) == 0)
                 return false;
+    return true;
+}
 
+struct house** init_house_from_file(int size, FILE *fin)
+{
+    struct house **sq = (struct house**)malloc(size * sizeof(struct house*));
+    for(int i = 0; i < size; i++){
+        sq[i] = (struct house*)malloc(size * sizeof(struct house));
+        for(int j = 0; j < size; j++){
+            if(fread(&(sq[i][j].is_visible), sizeof(bool), 1, fin) == 0){
+                destroy_house(sq, size);
+                sq = NULL;
+                return sq;
+            }
+            sq[i][j].is_ship = false;
+            sq[i][j].is_afloat = NULL;
+            sq[i][j].health = NULL;
+        }
+    }
+    return sq;
 }
 
 bool write_board2file(struct board *brd, FILE *fout)
@@ -262,6 +325,34 @@ bool write_board2file(struct board *brd, FILE *fout)
         && write_ship_list2file(brd->afloat_ships, fout) && write_ship_list2file(brd->sunken_ships, fout))
         return true;
     return false;
+}
+
+struct board* read_board_from_file(int *points, FILE *fin)
+{
+    struct board* brd = (struct board*)malloc(sizeof(struct board));
+    if(fread(&(brd->size), sizeof(int), 1, fin) == 0) {
+        free(brd);
+        return NULL;
+    }
+    brd->square = init_house_from_file(brd->size, fin);
+    if(brd->square == NULL) {
+        destroy_board(brd);
+        brd = NULL;
+        return brd;
+    }
+    brd->afloat_ships = read_ship_list_from_file(brd, points, fin);
+    if(brd->afloat_ships == NULL){
+        destroy_board(brd);
+        brd = NULL;
+        return brd;
+    }
+    brd->sunken_ships = read_ship_list_from_file(brd, points, fin);
+    if(brd->sunken_ships == NULL){
+        destroy_board(brd);
+        brd = NULL;
+        return brd;
+    }
+    return brd;
 }
 
 void disp_board_fast(struct board *brd, bool debug)
@@ -296,35 +387,43 @@ void disp_board_fast(struct board *brd, bool debug)
     }
 }
 
-bool destroy_ship_list(struct ship_list *list)
+void destroy_ship_list(struct ship_list *list)
 {
-    while(list->next != NULL)
-        if(!destroy_ship_list(list->next))
-            return false;
+    if(list->next == NULL)
+        return;
+    destroy_ship_list(list->next);
     list->next = NULL;
     //free(list->ship); dont free ship_tmp here. free ship_tmp in destroy_conf.
-    for(int i = 0; i < list->ship->wid; i++){
-        free(list->health[i]);
-        list->health[i] = NULL;
+    if(list->ship != NULL && list->health != NULL) {
+        for (int i = 0; i < list->ship->wid; i++) {
+            free(list->health[i]);
+            list->health[i] = NULL;
+        }
+        free(list->health);
+        list->health = NULL;
     }
-    free(list->health);
-    list->health = NULL;
     free(list);
-    return true;
 }
 
-bool destroy_board(struct board *brd)
+void destroy_house(struct house** square, int size)
 {
-    for(int i = 0; i < brd->size; i++){
-        free(brd->square[i]);
-        brd->square[i] = NULL;
+    if(square == NULL)
+        return;
+    for(int i = 0; i < size; i++){
+        free(square[i]);
+        square[i] = NULL;
     }
-    free(brd->square);
+    free(square);
+}
+
+void destroy_board(struct board *brd)
+{
+    destroy_house(brd->square, brd->size);
     brd->square = NULL;
-    if(destroy_ship_list(brd->afloat_ships) && destroy_ship_list(brd->sunken_ships)) {
-        brd->afloat_ships = brd->sunken_ships = NULL;
-        free(brd);
-        return 1;
-    }
+    destroy_ship_list(brd->afloat_ships);
+    destroy_ship_list(brd->sunken_ships);
+    brd->afloat_ships = NULL;
+    brd->sunken_ships = NULL;
+    free(brd);
 }
 

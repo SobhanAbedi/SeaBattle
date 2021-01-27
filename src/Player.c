@@ -181,3 +181,31 @@ bool write_player2file(struct player *pl, FILE *fout)
         return true;
     return false;
 }
+
+struct player* read_player_from_file(int *points, FILE *fin)
+{
+    struct player *pl = (struct player*)malloc(sizeof(struct player));
+    int ID;
+    if(fread(&ID, sizeof(int), 1, fin) == 0) {
+        free(pl);
+        return NULL;
+    }
+    pl->iden = load_identity(ID);
+    pl->brd = read_board_from_file(points, fin);
+    if(pl->iden == NULL || pl->brd == NULL){
+        destroy_player(pl);
+        pl = NULL;
+        return pl;
+    }
+    pl->points = 0;
+    return pl;
+}
+
+void destroy_player(struct player *pl)
+{
+    if(pl == NULL)
+        return;
+    free(pl->iden);
+    destroy_board(pl->brd);
+    free(pl);
+}

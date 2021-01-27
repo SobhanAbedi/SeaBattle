@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include "Config.h"
 
-//structs declaration
+//struct declarations
 struct ship_tmp;
 struct location;
 struct location_ext;
@@ -16,7 +16,7 @@ struct ship_list;
 struct house;
 struct board;
 
-//functions declaration
+//function declarations
 struct ship_tmp new_ship_tmp(int len, int wid, int points);
 struct ship_list* new_ship_list_ent(struct ship_tmp *ship, struct location *ploc);
 struct location_ext* get_location_ext(struct location *loc);
@@ -28,13 +28,17 @@ struct ship_list* copy_ship_list(struct ship_list *list1);
 bool rem_ship_list_ent(struct ship_list *pre);
 struct board* init_board();
 bool write_ship_list2file(struct ship_list *list, FILE *fout);
+struct ship_list* read_ship_list_from_file(struct board *brd, int *points, FILE *fin);
 bool write_house2file(struct board *brd, FILE *fout);
+struct house** init_house_from_file(int size, FILE *fin);
 bool write_board2file(struct board *brd, FILE *fout);
+struct board* read_board_from_file(int *points, FILE *fin);
 void disp_board_fast(struct board *brd, bool debug);
-bool destroy_ship_list(struct ship_list *ship);
-bool destroy_board(struct board *brd);
+void destroy_ship_list(struct ship_list *ship);
+void destroy_house(struct house** square, int size);
+void destroy_board(struct board *brd);
 
-//structs definition
+//struct definitions
 struct ship_tmp{
     int len, wid, points;
 };

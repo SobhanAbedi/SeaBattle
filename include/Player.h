@@ -8,11 +8,11 @@
 #include "Board.h"
 #include "Config.h"
 #define NAME_LEN 64
-//structs declaration
+//struct declarations
 struct identity;
 struct player;
 
-//functions declaration
+//function declarations
 struct identity* get_identity(int other_player_ID);
 struct identity* load_identity(int ID);
 bool save_identity(struct player *pl, int has_won);
@@ -21,9 +21,10 @@ struct player* init_player(int other_player_ID);
 void disp_player_fast(struct player *pl);
 void disp_top5_players();
 bool write_player2file(struct player *pl, FILE *fout);
+struct player* read_player_from_file(int *points, FILE *fin);
+void destroy_player(struct player *pl);
 
-//structs definition
-
+//struct definitions
 struct identity
 {
     char name[NAME_LEN];

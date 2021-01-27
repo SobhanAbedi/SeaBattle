@@ -9,19 +9,20 @@
 
 #include "Board.h"
 
-//structs declaration
+//struct declarations
 struct config_ship_list;
 struct config;
 
-//functions declaration
+//function declarations
 void init_systems();
 struct config_ship_list* new_config_ship_list_ent(struct ship_tmp *ship, int count);
 void destroy_config_ship_list(struct config_ship_list *list);
 void restore_conf();
 struct ship_tmp* get_ship_temps();
 struct config* get_conf();
+void close_systems();
 
-//structs definition
+//struct definitions
 struct config_ship_list{
     struct config_ship_list *next;
     struct ship_tmp *ship;
