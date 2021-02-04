@@ -13,8 +13,14 @@ int main() {
     scanf("%d", &choice);
     if(choice == 1)
         load_game();
-    else
-        init_game_pvp();
+    else {
+        printf("PVB: 0, PVP: 1");
+        scanf("%d", &choice);
+        if(choice)
+            init_game_pvp();
+        else
+            init_game_pvb();
+    }
     close_systems();
     disp_top5_players();
     show_saves(true);

@@ -10,7 +10,8 @@ struct meta;
 
 //function declarations
 int hit(struct board *brd, int x, int y);
-int play_player(struct player *offensive_pl, struct player *defensive_pl);
+int play_player(struct player *offensive_pl, struct board *defensive_brd);
+int play_android(struct android *bot, struct board *brd);
 int get_first_free_int();
 bool save_enactor(void *en, bool is_bot, FILE *fout);
 void* load_enactor(bool is_bot, int *points, FILE *fin);
@@ -19,6 +20,8 @@ bool show_saves(bool verbose);
 void load_game();
 void init_game_pvp();
 void run_game_pvp(struct player *pl1, struct player *pl2);
+void init_game_pvb();
+void run_game_pvb(struct player *pl, struct android *bot);
 
 
 //struct definitions

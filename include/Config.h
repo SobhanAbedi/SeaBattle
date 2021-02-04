@@ -17,6 +17,7 @@ struct config;
 void init_systems();
 struct config_ship_list* new_config_ship_list_ent(struct ship_tmp *ship, int count);
 void destroy_config_ship_list(struct config_ship_list *list);
+void save_conf(int size, int *count);
 void restore_conf();
 struct ship_tmp* get_ship_temps();
 struct config* get_conf();

@@ -387,6 +387,38 @@ void disp_board_fast(struct board *brd, bool debug)
     }
 }
 
+struct board_min* get_board_for_bot(struct board *brd)
+{
+    struct board_min *brd_min = (struct board_min*)malloc(sizeof(struct board_min));
+    brd_min->size = brd->size;
+    brd_min->square = (int**)malloc(brd_min->size * sizeof(int*));
+    for(int i = 0; i < brd_min->size; i++){
+        brd_min->square[i] = (int*)malloc(brd_min->size * sizeof(int));
+        for(int j = 0; j < brd_min->size; j++){
+            if(!brd->square[i][j].is_visible)
+                brd_min->square[i][j] = -1;
+            else if(!brd->square[i][j].is_ship)
+                brd_min->square[i][j] = 0;
+            else
+                brd_min->square[i][j] = 1;
+        }
+    }
+    int count = 0;
+    struct ship_list *cur = brd->afloat_ships->next;
+    while(cur != NULL){
+        cur = cur->next;
+        count++;
+    }
+    brd_min->afloat_ship_count = count;
+    cur = brd->afloat_ships->next;
+    brd_min->afloat_ships = (struct ship_tmp*)malloc(count * sizeof(struct ship_tmp));
+    for(int i = 0; i < count && cur != NULL; i++){
+        brd_min->afloat_ships = cur->ship;
+        cur = cur->next;
+    }
+    return brd_min;
+}
+
 void destroy_ship_list(struct ship_list *list)
 {
     if(list->next == NULL)
@@ -427,3 +459,15 @@ void destroy_board(struct board *brd)
     free(brd);
 }
 
+void destroy_board_min(struct board_min *brd)
+{
+    free(brd->afloat_ships);
+    brd->afloat_ships = NULL;
+    for(int i = 0; i < brd->size; i++){
+        free(brd->square[i]);
+        brd->square[i] = NULL;
+    }
+    free(brd->square);
+    brd->square = NULL;
+    free(brd);
+}

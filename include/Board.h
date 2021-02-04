@@ -34,9 +34,11 @@ struct house** init_house_from_file(int size, FILE *fin);
 bool write_board2file(struct board *brd, FILE *fout);
 struct board* read_board_from_file(int *points, FILE *fin);
 void disp_board_fast(struct board *brd, bool debug);
+struct board_min* get_board_for_bot(struct board *brd);
 void destroy_ship_list(struct ship_list *ship);
 void destroy_house(struct house** square, int size);
 void destroy_board(struct board *brd);
+void destroy_board_min(struct board_min *brd);
 
 //struct definitions
 struct ship_tmp{
@@ -67,6 +69,12 @@ struct board{
     struct ship_list *afloat_ships, *sunken_ships;
     int size;
     struct house **square;
+};
+
+struct board_min{
+    int size, afloat_ship_count;
+    int **square;
+    struct ship_tmp *afloat_ships;
 };
 
 #endif //SEABATTLE_BOARD_H

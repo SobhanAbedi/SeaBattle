@@ -44,9 +44,8 @@ void destroy_config_ship_list(struct config_ship_list *list)
     free(list);
 }
 
-void restore_conf()
+void save_conf(int size, int *count)
 {
-    int size = 10, count[] = {0, 0, 1, 0, 0, 2, 3, 4};
     FILE *fout = fopen("../resources/config/conf", "wb");
     if(fout == NULL){
         printf("Could Not Save Config File\n");
@@ -55,6 +54,12 @@ void restore_conf()
     fwrite(&size, sizeof(int), 1, fout);
     fwrite(count, sizeof(int), SHIP_COUNT, fout);
     fclose(fout);
+}
+
+void restore_conf()
+{
+    int size = 10, count[] = {0, 0, 1, 0, 0, 2, 3, 4};
+    save_conf(size, count);
 }
 
 struct ship_tmp* get_ship_temps()

@@ -36,33 +36,61 @@ int hit(struct board *brd, int x, int y)
     return 0;
 }
 
-int play_player(struct player *offensive_pl, struct player *defensive_pl)
+int play_player(struct player *offensive_pl, struct board *defensive_brd)
 {
     int x, y, res, sink_points;
     do{
         printf("Turn Map:\n");
-        disp_board_fast(defensive_pl->brd, 0);
+        disp_board_fast(defensive_brd, 0);
         printf("Enter row and column: ");
         scanf("%d%d", &y, &x);
-        res = hit(defensive_pl->brd, x, y);
+        res = hit(defensive_brd, x, y);
     } while(res == -1);
     if(res == 1) {
         offensive_pl->points++;
-        sink_points = check_afloat_ships(defensive_pl->brd);
+        sink_points = check_afloat_ships(defensive_brd);
         if(sink_points) {
-            printf("You Suck a ship ;)\n");
+            printf("You Sunk a ship ;)\n");
             offensive_pl->points += sink_points;
-            if(defensive_pl->brd->afloat_ships->next == NULL){
+            if(defensive_brd->afloat_ships->next == NULL){
                 printf("You Won :D\n");
-                if(save_identity(offensive_pl, 1) && save_identity(defensive_pl, 0))
-                    printf("Players Results Saved\n");
+                if(save_identity(offensive_pl, 1))
+                    printf("Winner Results Saved\n");
                 return 0;
             }
         }
-        return play_player(offensive_pl, defensive_pl);
+        return play_player(offensive_pl, defensive_brd);
     }
     if(res == -2)
         return -1;
+    return 1;
+}
+
+int play_android(struct android *bot, struct board *brd)
+{
+    int res, sink_points;
+    struct board_min *brd_min;
+    do {
+         brd_min = get_board_for_bot(brd);
+        struct location loc = get_hit_loc(brd_min);
+        res = hit(brd, loc.x, loc.y);
+    } while(res == -1);
+    destroy_board_min(brd_min);
+    disp_board_fast(brd, 0);
+
+    if(res == 1){
+        bot->points++;
+        sink_points = check_afloat_ships(brd);
+        if(sink_points){
+            printf("Bot Sunk a ship :/\n");
+            bot->points += sink_points;
+            if(brd->afloat_ships->next == NULL){
+                printf("You Lost :p\n");
+                return 0;
+            }
+        }
+        return play_android(bot, brd);
+    }
     return 1;
 }
 
@@ -323,14 +351,18 @@ void run_game_pvp(struct player *pl1, struct player *pl2)
     struct player *offensive_pl, *defensive_pl, *tmp_pl;
     offensive_pl = pl2;
     defensive_pl = pl1;
-    int res;
+    int state; //-1: exit game, 0: game has ended, 1: change turn
     do {
         tmp_pl = offensive_pl;
         offensive_pl = defensive_pl;
         defensive_pl = tmp_pl;
-        res = play_player(offensive_pl, defensive_pl);
-    } while(res == 1);
-    if(res == -1){
+        state = play_player(offensive_pl, defensive_pl->brd);
+    } while(state == 1);
+    if(state == 0){
+        if(save_identity(defensive_pl, 0))
+            printf("Looser Results Saved\n");
+    }
+    if(state == -1){
         int choice;
         printf("Do you want to save the game? (No:0, Yes:1) ");
         scanf("%d", &choice);
@@ -343,4 +375,41 @@ void run_game_pvp(struct player *pl1, struct player *pl2)
     }
     destroy_player(pl1);
     destroy_player(pl2);
+}
+
+void init_game_pvb()
+{
+    struct player *pl = init_player(-1);
+    struct android *bot = init_bot();
+    run_game_pvb(pl, bot);
+}
+
+void run_game_pvb(struct player *pl, struct android *bot)
+{
+    disp_player_fast(pl);
+    bool pl_turn = false;
+    int state; //-1: exit game, 0: game has ended, 1: change turn
+    do{
+        pl_turn = !pl_turn;
+        if(pl_turn)
+            state = play_player(pl, bot->brd);
+        else
+            state = play_android(bot, pl->brd);
+    } while (state == 1);
+    if(state == 0 && !pl_turn && save_identity(pl, 0)){
+        printf("Looser Results Saved\n");
+    }
+    if(state == -1) {
+        int choice;
+        printf("Do you want to save the game? (No:0, Yes:1) ");
+        scanf("%d", &choice);
+        if (choice) {
+            if (save_identity(pl, -1) && save_game(pl, bot, false))
+                printf("Game Saved\n");
+            else
+                printf("Could Not Save The Game");
+        }
+    }
+    destroy_player(pl);
+    destroy_android(bot);
 }
