@@ -25,7 +25,7 @@ int hit(struct board *brd, int x, int y)
         return -1;
     }
     if(brd->square[y][x].is_ship){
-        printf("You hit a Ship :)\n");
+        printf("Ship Hit :)\n");
         brd->square[y][x].is_visible = true;
         *brd->square[y][x].health = false;
         //check for other possible changes
@@ -38,6 +38,8 @@ int hit(struct board *brd, int x, int y)
 
 int play_player(struct player *offensive_pl, struct board *defensive_brd)
 {
+    //disp_player_fast(offensive_pl, false);
+    printf("%s Has %d  Points in Current Game\n", offensive_pl->iden->name, offensive_pl->points);
     int x, y, res, sink_points;
     do{
         printf("Turn Map:\n");
@@ -46,6 +48,8 @@ int play_player(struct player *offensive_pl, struct board *defensive_brd)
         scanf("%d%d", &y, &x);
         res = hit(defensive_brd, x, y);
     } while(res == -1);
+    printf("Result Map:\n");
+    disp_board_fast(defensive_brd, 0);
     if(res == 1) {
         offensive_pl->points++;
         sink_points = check_afloat_ships(defensive_brd);
@@ -68,30 +72,35 @@ int play_player(struct player *offensive_pl, struct board *defensive_brd)
 
 int play_android(struct android *bot, struct board *brd)
 {
+    //disp_android_fast(bot, false);
+    printf("Bot Has %d  Points in Current Game\n", bot->points);
     int res, sink_points;
+    static double max_found = 10000;
     struct board_min *brd_min;
     do {
-         brd_min = get_board_for_bot(brd);
-        struct location loc = get_hit_loc(brd_min);
+        struct location loc = get_hit_loc(brd, 100, max_found);
         res = hit(brd, loc.x, loc.y);
     } while(res == -1);
-    destroy_board_min(brd_min);
-    disp_board_fast(brd, 0);
 
     if(res == 1){
+        max_found /= 1.1;
         bot->points++;
         sink_points = check_afloat_ships(brd);
         if(sink_points){
             printf("Bot Sunk a ship :/\n");
             bot->points += sink_points;
             if(brd->afloat_ships->next == NULL){
-                printf("You Lost :p\n");
+                max_found = 10000;
+                printf("Bot Won :p\n");
                 return 0;
             }
         }
+        disp_board_fast(brd, 0);
         return play_android(bot, brd);
+    }else {
+        disp_board_fast(brd, 0);
+        return 1;
     }
-    return 1;
 }
 
 int get_first_free_int()
@@ -346,8 +355,8 @@ void init_game_pvp()
 
 void run_game_pvp(struct player *pl1, struct player *pl2)
 {
-    disp_player_fast(pl1);
-    disp_player_fast(pl2);
+    disp_player_fast(pl1, true);
+    disp_player_fast(pl2, true);
     struct player *offensive_pl, *defensive_pl, *tmp_pl;
     offensive_pl = pl2;
     defensive_pl = pl1;
@@ -386,7 +395,8 @@ void init_game_pvb()
 
 void run_game_pvb(struct player *pl, struct android *bot)
 {
-    disp_player_fast(pl);
+    disp_player_fast(pl, true);
+    disp_android_fast(bot, true);
     bool pl_turn = false;
     int state; //-1: exit game, 0: game has ended, 1: change turn
     do{

@@ -370,7 +370,7 @@ void disp_board_fast(struct board *brd, bool debug)
                             printf("E");
                     }
                 } else
-                    printf("H");
+                    printf(" ");
                 printf(" ");
             }else {
                 if (brd->square[i][j].is_ship)
@@ -391,16 +391,17 @@ struct board_min* get_board_for_bot(struct board *brd)
 {
     struct board_min *brd_min = (struct board_min*)malloc(sizeof(struct board_min));
     brd_min->size = brd->size;
-    brd_min->square = (int**)malloc(brd_min->size * sizeof(int*));
+    brd_min->square = (struct house_min**)malloc(brd_min->size * sizeof(struct house_min*));
     for(int i = 0; i < brd_min->size; i++){
-        brd_min->square[i] = (int*)malloc(brd_min->size * sizeof(int));
+        brd_min->square[i] = (struct house_min*)malloc(brd_min->size * sizeof(struct house_min));
         for(int j = 0; j < brd_min->size; j++){
-            if(!brd->square[i][j].is_visible)
-                brd_min->square[i][j] = -1;
-            else if(!brd->square[i][j].is_ship)
-                brd_min->square[i][j] = 0;
-            else
-                brd_min->square[i][j] = 1;
+            brd_min->square[i][j].is_known = brd->square[i][j].is_visible;
+            brd_min->square[i][j].is_ship = brd_min->square[i][j].by_bot = brd_min->square[i][j].is_afloat = false;
+            if(brd_min->square[i][j].is_known){
+                brd_min->square[i][j].is_ship = brd->square[i][j].is_ship;
+                if(brd->square[i][j].is_ship)
+                    brd_min->square[i][j].is_afloat = *(brd->square[i][j].is_afloat);
+            }
         }
     }
     int count = 0;
@@ -413,7 +414,9 @@ struct board_min* get_board_for_bot(struct board *brd)
     cur = brd->afloat_ships->next;
     brd_min->afloat_ships = (struct ship_tmp*)malloc(count * sizeof(struct ship_tmp));
     for(int i = 0; i < count && cur != NULL; i++){
-        brd_min->afloat_ships = cur->ship;
+        brd_min->afloat_ships[i].wid = cur->ship->wid;
+        brd_min->afloat_ships[i].len = cur->ship->len;
+        brd_min->afloat_ships[i].points = cur->ship->points;
         cur = cur->next;
     }
     return brd_min;
@@ -459,9 +462,11 @@ void destroy_board(struct board *brd)
     free(brd);
 }
 
-void destroy_board_min(struct board_min *brd)
+void destroy_board_min(struct board_min *brd, bool is_final)
 {
-    free(brd->afloat_ships);
+    if(is_final) {
+        free(brd->afloat_ships);
+    }
     brd->afloat_ships = NULL;
     for(int i = 0; i < brd->size; i++){
         free(brd->square[i]);

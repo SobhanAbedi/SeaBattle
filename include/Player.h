@@ -18,7 +18,7 @@ struct identity* load_identity(int ID);
 bool save_identity(struct player *pl, int has_won);
 void disp_identity_fast(struct identity *iden);
 struct player* init_player(int other_player_ID);
-void disp_player_fast(struct player *pl);
+void disp_player_fast(struct player *pl, bool debug);
 void disp_top5_players();
 bool write_player2file(struct player *pl, FILE *fout);
 struct player* read_player_from_file(int *points, FILE *fin);

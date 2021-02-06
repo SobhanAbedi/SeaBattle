@@ -129,11 +129,12 @@ struct player* init_player(int other_player_ID)
     return pl;
 }
 
-void disp_player_fast(struct player *pl)
+void disp_player_fast(struct player *pl, bool debug)
 {
-    disp_identity_fast(pl->iden);
-    printf("Current Game: %d Points\n", pl->points);
-    disp_board_fast(pl->brd, 1);
+    if(debug)
+        disp_identity_fast(pl->iden);
+    printf("%s Has %d  Points in Current Game\n", pl->iden->name, pl->points);
+    disp_board_fast(pl->brd, debug);
 }
 
 void disp_top5_players()

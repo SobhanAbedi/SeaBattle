@@ -1,11 +1,18 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "Board.h"
 #include "Config.h"
 #include "Player.h"
+#include "Android.h"
 #include "Mechanism.h"
 
 int main() {
     init_systems();
+
+    struct board *brd = init_board();
+    printf("%d\n", can_fill_board(brd, 1000));
+
+
     disp_top5_players();
 
     printf("Do you want to load a game? (No:0, Yes:1) ");

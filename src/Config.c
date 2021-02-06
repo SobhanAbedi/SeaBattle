@@ -3,6 +3,7 @@
 //
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "Config.h"
 #include "Board.h"
 
@@ -25,6 +26,7 @@ void init_ship_tmps()
 void init_systems()
 {
     init_ship_tmps();
+    srand(time(NULL));
 }
 
 struct config_ship_list* new_config_ship_list_ent(struct ship_tmp *ship, int count)

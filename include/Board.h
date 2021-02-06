@@ -38,7 +38,7 @@ struct board_min* get_board_for_bot(struct board *brd);
 void destroy_ship_list(struct ship_list *ship);
 void destroy_house(struct house** square, int size);
 void destroy_board(struct board *brd);
-void destroy_board_min(struct board_min *brd);
+void destroy_board_min(struct board_min *brd, bool is_final);
 
 //struct definitions
 struct ship_tmp{
@@ -65,6 +65,10 @@ struct house{
     bool *is_afloat, *health;
 };
 
+struct house_min{
+    bool is_known, is_ship, is_afloat, by_bot;
+};
+
 struct board{
     struct ship_list *afloat_ships, *sunken_ships;
     int size;
@@ -73,8 +77,8 @@ struct board{
 
 struct board_min{
     int size, afloat_ship_count;
-    int **square;
     struct ship_tmp *afloat_ships;
+    struct house_min **square;
 };
 
 #endif //SEABATTLE_BOARD_H
