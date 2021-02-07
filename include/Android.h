@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include "Board.h"
 
+
 //struct declarations
 struct android;
 
@@ -27,9 +28,12 @@ bool get_next_location_random(struct board_min *brd, struct location *loc, int**
 bool get_next_location_E_priority(struct board_min *brd, struct location *loc, int****loc_pos, int ship_num, struct location *assist_loc);
 bool board_has_Es(struct board_min *brd);
 bool get_next_location(struct board_min *brd, struct location *loc, int****loc_pos, int ship_num, bool random, struct location *assist_loc);
-bool fill_board_itr(struct board_min *main_brd, int ****loc_pos, int ship_num, int **res_board, bool random, double max_no_ans, int *found_count, double max_found, int max_uses);
+bool fill_board_itr(struct board_min *main_brd, int ****loc_pos, struct location *ships_loc, int ship_num, int **res_board, bool random, double max_no_ans, int *total_no_ans_count, int max_total_no_ans, int *found_count, double max_found, int max_uses);
 bool can_fill_board(struct board *brd, double max_no_ans);
+int pow2(int n);
+bool E_map(struct board_min *brd, int **res_board);
 struct location get_hit_loc(struct board *brd, int max_no_ans, double max_found);
+int fill_board(struct board *brd, struct location **ships_loc, double max_no_ans);
 void destroy_android(struct android *bot);
 void destroy_location_possibility(struct board_min *brd, int ****loc_pos);
 //struct definitions

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include "Board.h"
 #include "Config.h"
+#include "Android.h"
 
 struct ship_tmp new_ship_tmp(int len, int wid, int points)
 {
@@ -171,6 +172,44 @@ bool rem_ship_list_ent(struct ship_list *pre)
     return true;
 }
 
+int fill_board_random(struct board *brd, struct config_ship_list *conf_ship_list)
+{
+    struct location null_loc = {-1, -1, -1};
+    brd->afloat_ships = new_ship_list_ent(NULL, &null_loc);
+    struct config_ship_list *cur_list = conf_ship_list->next;
+    struct ship_list *cur_ship = brd->afloat_ships;
+    while(cur_list != NULL) {
+        for (int i = 0; i < cur_list->count; i++) {
+            cur_ship->next = new_ship_list_ent(cur_list->ship, &null_loc);
+            cur_ship = cur_ship->next;
+        }
+        cur_list = cur_list->next;
+    }
+    struct location *ships_loc;
+    int count = fill_board(brd, &ships_loc, 100);
+
+    destroy_ship_list(brd->afloat_ships);
+    brd->afloat_ships =NULL;
+    brd->afloat_ships = new_ship_list_ent(NULL, &null_loc);
+    cur_list = conf_ship_list->next;
+    cur_ship = brd->afloat_ships;
+    int k = 0;
+    while(cur_list != NULL && k < count) {
+        for (int i = 0; i < cur_list->count; i++) {
+            cur_ship->next = new_ship_list_ent(cur_list->ship, &(ships_loc[k]));
+            cur_ship = cur_ship->next;
+            if (!place_ship(brd->square, brd->size, cur_ship)) {
+                free(ships_loc);
+                return -1;
+            }
+            k++;
+        }
+        cur_list = cur_list->next;
+    }
+    free(ships_loc);
+    return count;
+}
+
 struct board* init_board()
 {
     struct config *conf = get_conf();
@@ -179,7 +218,7 @@ struct board* init_board()
     int y[] = {0, 0, 4, 0, 3, 6, 0, 2, 4, 6};
     //dir: 0->0deg, 1->90deg, 2->180deg, 3->270deg
     int dir[10] = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
-    struct location loc = {-1, -1, -1};
+    struct location null_loc = {-1, -1, -1};
     //End get location
     struct board* brd = (struct board*)malloc(sizeof(struct board));
     brd->size = conf->board_size;
@@ -192,10 +231,18 @@ struct board* init_board()
             brd->square[i][j].is_visible = 0;
         }
     }
-    brd->sunken_ships = new_ship_list_ent(NULL, &loc);
-    brd->afloat_ships = new_ship_list_ent(NULL, &loc);
-    struct ship_list *cur_ship = brd->afloat_ships;
-    struct config_ship_list *cur_list = conf->ship_list->next;
+    int k = fill_board_random(brd, conf->ship_list);
+    if (k == -1) {
+        printf("Could not Initiate Board\n");
+        destroy_board(brd);
+        brd = NULL;
+        return NULL;
+    }
+    brd->sunken_ships = new_ship_list_ent(NULL, &null_loc);
+
+    //struct ship_list *cur_ship = brd->afloat_ships;
+    //struct config_ship_list *cur_list = conf->ship_list->next;
+    /*
     int k = 0;
     while(cur_list != NULL) {
         for (int i = 0; i < cur_list->count; i++) {
@@ -214,6 +261,7 @@ struct board* init_board()
         }
         cur_list = cur_list->next;
     }
+    */
     destroy_config_ship_list(conf->ship_list);
     return brd;
 }
@@ -420,6 +468,13 @@ struct board_min* get_board_for_bot(struct board *brd)
         cur = cur->next;
     }
     return brd_min;
+}
+
+void make_board_visible(struct board *brd)
+{
+    for(int i = 0; i < brd->size; i++)
+        for(int j = 0; j < brd->size; j++)
+            brd->square[i][j].is_visible = true;
 }
 
 void destroy_ship_list(struct ship_list *list)

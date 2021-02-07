@@ -55,7 +55,7 @@ void board_cpy(struct board_min *dst, struct board_min *src)
 
 int bot_can_place_ship(struct board_min *brd, struct location *loc, int ship_num, int****loc_pos , bool place) //return 1:yes, 0:relative no, -1:absolute no
 {
-    bool can_place = true;
+    bool can_place = true, is_all_hit = true;
     struct location_ext *loc_ext = get_location_ext(loc);
     for(int i = -1; i <= brd->afloat_ships[ship_num].wid; i++){
         for(int j = -1; j <= brd->afloat_ships[ship_num].len; j++){
@@ -82,6 +82,7 @@ int bot_can_place_ship(struct board_min *brd, struct location *loc, int ship_num
                 }
             } else{
                 if(x < 0 || x >= brd->size || y < 0 || y >= brd->size) {
+                    free(loc_ext);
                     return -1;
                 }
                 if(place){
@@ -93,17 +94,24 @@ int bot_can_place_ship(struct board_min *brd, struct location *loc, int ship_num
                     for(int n = ship_num + 1; n < brd->afloat_ship_count; n++)
                         for(int k = 0; k < 4; k++)
                             loc_pos[n][y][x][k] = 0;
-                } else if(brd->square[y][x].is_known && !(brd->square[y][x].is_ship && brd->square[y][x].is_afloat)){
-                    if(!brd->square[y][x].by_bot) {
-                        free(loc_ext);
-                        return -1;
+                } else if(brd->square[y][x].is_known){
+                    if(!(brd->square[y][x].is_ship && brd->square[y][x].is_afloat)) {
+                        is_all_hit = false;
+                        if (!brd->square[y][x].by_bot) {
+                            free(loc_ext);
+                            return -1;
+                        }
+                        can_place = false;
                     }
-                    can_place = false;
+                } else{
+                    is_all_hit = false;
                 }
             }
         }
     }
     free(loc_ext);
+    if(is_all_hit)
+        return -1;
     if(can_place)
         return 1;
     return 0;
@@ -171,12 +179,13 @@ void merge_location_possibility(struct board_min *brd, int ****dst, int ****src,
 
 void reset_location_possibility(struct board_min *brd, int ****loc_pos, int ship_num)
 {
+    /*
     for(int i = 0; i < brd->size; i++)
         for(int j = 0; j < brd->size; j++)
             for(int k = 0; k < 4; k++)
                 if(loc_pos[ship_num][i][j][k] == 0)
                     loc_pos[ship_num][i][j][k] = 1;
-    /*
+    */
     for(int n = ship_num; n < brd->afloat_ship_count; n++) {
         for (int i = 0; i < brd->size; i++) {
             for (int j = 0; j < brd->size; j++) {
@@ -197,7 +206,7 @@ void reset_location_possibility(struct board_min *brd, int ****loc_pos, int ship
             }
         }
     }
-    */
+
 }
 
 bool get_next_location_sequential(struct board_min *brd, struct location *loc, int****loc_pos, int ship_num)
@@ -261,6 +270,7 @@ bool get_next_location_E_priority(struct board_min *brd, struct location *loc, i
     struct location *cur_loc = (struct location*)malloc(sizeof(struct location));
     struct location_ext *cur_loc_ext = (struct location_ext*)malloc(sizeof(struct location_ext));
     int m = assist_loc[0].y, n = assist_loc[0].x, i = assist_loc[1].y, j = assist_loc[1].x, k = assist_loc[1].dir + 1;
+    //int m, n, i, j, k; m = n = i = j = k = 0;
     for(; m < brd->size; m++){
         for(; n < brd->size; n++){
             if(!(brd->square[m][n].is_known && brd->square[m][n].is_ship && brd->square[m][n].is_afloat))
@@ -351,7 +361,7 @@ bool get_next_location(struct board_min *brd, struct location *loc, int****loc_p
     return true;
 }
 
-bool fill_board_itr(struct board_min *main_brd, int ****loc_pos, int ship_num, int **res_board, bool random, double max_no_ans, int *found_count, double max_found, int max_uses)
+bool fill_board_itr(struct board_min *main_brd, int ****loc_pos, struct location *ships_loc, int ship_num, int **res_board, bool random, double max_no_ans, int *total_no_ans_count, int max_total_no_ans, int *found_count, double max_found, int max_uses)
 {
     //for(int i = 0; i < ship_num; i++)
     //    printf("  ");
@@ -389,12 +399,14 @@ bool fill_board_itr(struct board_min *main_brd, int ****loc_pos, int ship_num, i
         if (possible == 1){
             //int ****temp_loc_pos = copy_location_possibility(main_brd, loc_pos, ship_num + 1);
             bot_can_place_ship(cur_brd, loc, ship_num, loc_pos, 1);
-            temp_res = fill_board_itr(cur_brd, loc_pos, ship_num + 1, res_board, random, max_no_ans * 1.2, found_count, max_found, max_uses);
+            ships_loc[ship_num] = *loc;
+            temp_res = fill_board_itr(cur_brd, loc_pos, ships_loc, ship_num + 1, res_board, random, max_no_ans * 1.0, total_no_ans_count , max_total_no_ans, found_count, max_found, max_uses);
             //merge_location_possibility(main_brd, loc_pos, temp_loc_pos, ship_num + 1);
             if(temp_res)
                 uses++;
             else {
                 no_ans_count++;
+                (*total_no_ans_count)++;
                 possible = 0;
             }
             res = res || temp_res;
@@ -405,7 +417,9 @@ bool fill_board_itr(struct board_min *main_brd, int ****loc_pos, int ship_num, i
             if(ship_num + 1 < main_brd->afloat_ship_count)
                 reset_location_possibility(main_brd, loc_pos, ship_num + 1);
 
-            if((*found_count) >= max_found || no_ans_count >= max_no_ans){
+            if((*found_count) >= max_found || no_ans_count >= max_no_ans || (*total_no_ans_count) >= max_total_no_ans){
+                //if((*total_no_ans_count) >= max_total_no_ans)
+                //    printf("Total No Ans Count: %d\n", *total_no_ans_count);
                 //printf("%d found, %d no ans\n", *found_count, no_ans_count);
                 destroy_board_min(cur_brd, false);
                 free(loc);
@@ -432,7 +446,7 @@ bool can_fill_board(struct board *brd, double max_no_ans)
 {
     struct board_min *brd_min = get_board_for_bot(brd);
     //printf("board_min made\n");
-    int found_count = 0;
+    int found_count = 0, total_no_ans_count = 0;
     int **res_board = (int**)malloc(brd_min->size * sizeof(int*));
     for(int i = 0; i < brd_min->size; i++){
         res_board[i] = (int*)malloc(brd_min->size * sizeof(int));
@@ -441,8 +455,9 @@ bool can_fill_board(struct board *brd, double max_no_ans)
     }
     //printf("res_board made\n");
     int ****loc_pos = get_location_possibility(brd_min);
+    struct location *ships_loc = (struct location*)malloc(brd_min->afloat_ship_count * sizeof(struct location));
     //printf("got location_possibility\n");
-    bool ans = fill_board_itr(brd_min, loc_pos,0, res_board, false, max_no_ans, &found_count, 1, 2);
+    bool ans = fill_board_itr(brd_min, loc_pos, ships_loc, 0, res_board, false, max_no_ans, &total_no_ans_count, 100000, &found_count, 1, 2);
 
     for(int i = 0 ; i < brd_min->size; i++){
         for(int j = 0; j < brd_min->size; j++)
@@ -455,20 +470,73 @@ bool can_fill_board(struct board *brd, double max_no_ans)
         res_board[i] = NULL;
     }
     free(res_board);
+    free(ships_loc);
     res_board = NULL;
     destroy_location_possibility(brd_min, loc_pos);
     destroy_board_min(brd_min, true);
     return ans;
 }
 
+int pow2(int n)
+{
+    int P = 1;
+    for(int i = 0; i < n; i++)
+        P *= 2;
+    return P;
+}
+
+bool E_map(struct board_min *brd, int **res_board)
+{
+    if(!board_has_Es(brd))
+        return false;
+    struct location *loc = (struct location*)malloc(sizeof(struct location));
+    struct location_ext *loc_ext = (struct location_ext*)malloc(sizeof(struct location_ext));
+    loc->x = loc->y = 0;
+    loc->dir = res_board[0][0];
+    for(int i = 0; i < brd->size; i++){
+        for(int j = 0; j < brd->size; j++){
+            if(res_board[i][j] > loc->dir){
+                loc->y = i;
+                loc->x = j;
+                loc->dir = res_board[i][j];
+            }
+        }
+    }
+    int max_res = loc->dir;
+    for(int m = 0; m < brd->size; m++) {
+        for (int n = 0; n < brd->size; n++) {
+            if (!(brd->square[m][n].is_known && brd->square[m][n].is_ship && brd->square[m][n].is_afloat))
+                continue;
+            loc->y = m;
+            loc->x = n;
+            for (int i = 0; i < brd->afloat_ships[0].wid; i++) {
+                for (int j = 0; j < brd->afloat_ships[0].len; j++) {
+                    if(i == 0 && j == 0)
+                        continue;
+                    for (int k = 0; k < 4; k++) {
+                        loc->dir = k;
+                        loc_ext = get_location_ext(loc);
+                        int x = loc_ext->x - i * (loc_ext->dx_wid) - j * (loc_ext->dx_len);
+                        int y = loc_ext->y - i * (loc_ext->dy_wid) - j * (loc_ext->dy_len);
+                        if (x < 0 || y < 0 || x >= brd->size || y >= brd->size)
+                            continue;
+                        res_board[y][x] += (max_res / pow2(i + j));
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
 struct location get_hit_loc(struct board *brd, int max_no_ans, double max_found)
 {
-
+    double threshold = 0.8;
     //printf("Hi\n");
     struct board_min *brd_min = get_board_for_bot(brd);
     //printf("Trying to place %d ships\n", brd_min->afloat_ship_count);
     //printf("board_min made\n");
-    int found_count = 0;
+    int found_count = 0, total_no_ans_count = 0;
     int **res_board = (int**)malloc(brd_min->size * sizeof(int*));
     for(int i = 0; i < brd_min->size; i++){
         res_board[i] = (int*)malloc(brd_min->size * sizeof(int));
@@ -477,8 +545,9 @@ struct location get_hit_loc(struct board *brd, int max_no_ans, double max_found)
     }
     //printf("res_board made\n");
     int ****loc_pos = get_location_possibility(brd_min);
+    struct location *ships_loc = (struct location*)malloc(brd_min->afloat_ship_count * sizeof(struct location));
     //printf("got location_possibility\n");
-    bool ans = fill_board_itr(brd_min, loc_pos, 0, res_board, true, (double)max_no_ans, &found_count, max_found, 1);
+    bool ans = fill_board_itr(brd_min, loc_pos, ships_loc, 0, res_board, true, (double)max_no_ans, &total_no_ans_count, 100000, &found_count, max_found, 1);
     //if(!ans)
     //    ans = fill_board_itr(brd_min, loc_pos, 0, res_board, false, &no_ans_count, max_no_ans, &found_count, 10000, 3);
     //printf("%d Answers Found\n", found_count);
@@ -486,46 +555,51 @@ struct location get_hit_loc(struct board *brd, int max_no_ans, double max_found)
     max_loc.x = max_loc.y = max_loc.dir = -1;
     min_loc.x = min_loc.y = min_loc.dir = -1;
     if(ans) {
+        if(E_map(brd_min, res_board))
+            threshold = 0.9;
+        else
+            threshold = 0.7;
         max_loc.x = max_loc.y = 0;
         max_loc.dir = res_board[0][0];
         min_loc.x = min_loc.y = 0;
         min_loc.dir = res_board[0][0];
         for (int i = 0; i < brd_min->size; i++) {
             for (int j = 0; j < brd_min->size; j++) {
-                if(res_board[i][j] > max_loc.dir){
+                if (res_board[i][j] > max_loc.dir) {
                     max_loc.dir = res_board[i][j];
                     max_loc.y = i;
                     max_loc.x = j;
                 }
-                if(res_board[i][j] < min_loc.dir){
+                if (res_board[i][j] < min_loc.dir) {
                     min_loc.dir = res_board[i][j];
                     min_loc.y = i;
                     min_loc.x = j;
                 }
             }
         }
-    }
-    printf("Max Value: %d\n", max_loc.dir);
-    int available_locs = 0;
-    for(int i = 0; i < brd_min->size; i++){
-        for(int j = 0; j < brd_min->size; j++) {
-            if((((double)(res_board[i][j] - min_loc.dir))/(max_loc.dir - min_loc.dir)) >= 0.8)
-                available_locs++;
-            printf("%-2d", (int) (10 * (((double)(res_board[i][j]) - min_loc.dir) / (max_loc.dir - min_loc.dir))));
+
+        //printf("Max Value: %d\n", max_loc.dir);
+        int available_locs = 0;
+        for (int i = 0; i < brd_min->size; i++) {
+            for (int j = 0; j < brd_min->size; j++) {
+                if ((((double) (res_board[i][j] - min_loc.dir)) / (max_loc.dir - min_loc.dir)) >= threshold)
+                    available_locs++;
+                //printf("%-2d", (int) (10 * (((double) (res_board[i][j]) - min_loc.dir) / (max_loc.dir - min_loc.dir))));
+            }
+            //printf("\n");
         }
-        printf("\n");
-    }
-    int desired_loc = (int)(available_locs * (((double)rand())/RAND_MAX));
-    if(desired_loc == available_locs)
-        desired_loc--;
-    for(int i = 0; i < brd_min->size && desired_loc >= 0; i++){
-        for(int j = 0; j < brd_min->size && desired_loc >= 0; j++){
-            if((((double)(res_board[i][j] - min_loc.dir))/(max_loc.dir - min_loc.dir)) >= 0.8){
-                if(desired_loc == 0){
-                    max_loc.y = i;
-                    max_loc.x = j;
+        int desired_loc = (int) (available_locs * (((double) rand()) / RAND_MAX));
+        if (desired_loc == available_locs)
+            desired_loc--;
+        for (int i = 0; i < brd_min->size && desired_loc >= 0; i++) {
+            for (int j = 0; j < brd_min->size && desired_loc >= 0; j++) {
+                if ((((double) (res_board[i][j] - min_loc.dir)) / (max_loc.dir - min_loc.dir)) >= threshold) {
+                    if (desired_loc == 0) {
+                        max_loc.y = i;
+                        max_loc.x = j;
+                    }
+                    desired_loc--;
                 }
-                desired_loc--;
             }
         }
     }
@@ -539,6 +613,33 @@ struct location get_hit_loc(struct board *brd, int max_no_ans, double max_found)
     destroy_location_possibility(brd_min, loc_pos);
     destroy_board_min(brd_min, true);
     return max_loc;
+}
+
+int fill_board(struct board *brd, struct location **ships_loc, double max_no_ans) {
+    struct board_min *brd_min = get_board_for_bot(brd);
+    //printf("got brd_min. ship_count: %d\n", brd_min->afloat_ship_count);
+    int found_count = 0, total_no_ans_count = 0;
+    int **res_board = (int **) malloc(brd_min->size * sizeof(int *));
+    for (int i = 0; i < brd_min->size; i++) {
+        res_board[i] = (int *) malloc(brd_min->size * sizeof(int));
+        for (int j = 0; j < brd_min->size; j++)
+            res_board[i][j] = 0;
+    }
+    int ****loc_pos = get_location_possibility(brd_min);
+    *ships_loc = (struct location *) malloc(brd_min->afloat_ship_count * sizeof(struct location));
+    bool ans = fill_board_itr(brd_min, loc_pos, *ships_loc, 0, res_board, true, max_no_ans, &total_no_ans_count, 100000, &found_count, 1, 1);
+    //printf("Got out of fill_board_itr, ans is %d\n", ans);
+    for(int i = 0; i < brd_min->size; i++){
+        free(res_board[i]);
+        res_board[i] = NULL;
+    }
+    int count = brd_min->afloat_ship_count;
+
+    free(res_board);
+    res_board = NULL;
+    destroy_location_possibility(brd_min, loc_pos);
+    destroy_board_min(brd_min, false);
+    return count;
 }
 
 void destroy_android(struct android *bot)

@@ -25,7 +25,7 @@ int hit(struct board *brd, int x, int y)
         return -1;
     }
     if(brd->square[y][x].is_ship){
-        printf("Ship Hit :)\n");
+        //printf("Ship Hit :)\n");
         brd->square[y][x].is_visible = true;
         *brd->square[y][x].health = false;
         //check for other possible changes
@@ -48,22 +48,32 @@ int play_player(struct player *offensive_pl, struct board *defensive_brd)
         scanf("%d%d", &y, &x);
         res = hit(defensive_brd, x, y);
     } while(res == -1);
-    printf("Result Map:\n");
-    disp_board_fast(defensive_brd, 0);
+
     if(res == 1) {
+        printf("You Hit a ship :)\n");
         offensive_pl->points++;
         sink_points = check_afloat_ships(defensive_brd);
         if(sink_points) {
             printf("You Sunk a ship ;)\n");
             offensive_pl->points += sink_points;
+            printf("Result Map:\n");
+            disp_board_fast(defensive_brd, 0);
             if(defensive_brd->afloat_ships->next == NULL){
                 printf("You Won :D\n");
+                make_board_visible(defensive_brd);
+                disp_board_fast(defensive_brd, 0);
                 if(save_identity(offensive_pl, 1))
                     printf("Winner Results Saved\n");
                 return 0;
+            } else{
+                printf("Result Map:\n");
+                disp_board_fast(defensive_brd, 0);
             }
         }
         return play_player(offensive_pl, defensive_brd);
+    } else {
+        printf("Result Map:\n");
+        disp_board_fast(defensive_brd, 0);
     }
     if(res == -2)
         return -1;
@@ -75,32 +85,40 @@ int play_android(struct android *bot, struct board *brd)
     //disp_android_fast(bot, false);
     printf("Bot Has %d  Points in Current Game\n", bot->points);
     int res, sink_points;
-    static double max_found = 10000;
+    double max_found = 10000;
     struct board_min *brd_min;
     do {
-        struct location loc = get_hit_loc(brd, 100, max_found);
+        struct location loc = get_hit_loc(brd, 5, max_found);
         res = hit(brd, loc.x, loc.y);
     } while(res == -1);
 
     if(res == 1){
-        max_found /= 1.1;
+        printf("Bot Hit a ship :|\n");
+        //max_found /= 1.1;
         bot->points++;
         sink_points = check_afloat_ships(brd);
         if(sink_points){
             printf("Bot Sunk a ship :/\n");
             bot->points += sink_points;
+            printf("Result Map:\n");
+            disp_board_fast(brd, 0);
             if(brd->afloat_ships->next == NULL){
-                max_found = 10000;
+                //max_found = 10000;
                 printf("Bot Won :p\n");
+                make_board_visible(brd);
+                disp_board_fast(brd, 0);
                 return 0;
             }
+        } else {
+            printf("Result Map:\n");
+            disp_board_fast(brd, 0);
         }
-        disp_board_fast(brd, 0);
         return play_android(bot, brd);
-    }else {
+    } else {
+        printf("Result Map:\n");
         disp_board_fast(brd, 0);
-        return 1;
     }
+    return 1;
 }
 
 int get_first_free_int()
