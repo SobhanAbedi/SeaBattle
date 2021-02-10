@@ -3,6 +3,7 @@
 //
 #include <stdio.h>
 #include <stdlib.h>
+#include "Config.h"
 #include "Android.h"
 
 struct android* init_bot()

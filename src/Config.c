@@ -6,6 +6,7 @@
 #include <time.h>
 #include "Config.h"
 #include "Board.h"
+#include "Graphics.h"
 
 //File Specific Global Variable
 struct ship_tmp *ship_tmps;
@@ -27,6 +28,7 @@ void init_systems()
 {
     init_ship_tmps();
     srand(time(NULL));
+    init_graphics(1280, 720);
 }
 
 struct config_ship_list* new_config_ship_list_ent(struct ship_tmp *ship, int count)
@@ -98,4 +100,5 @@ struct config* get_conf()
 void close_systems()
 {
     free(ship_tmps);
+    close_graphics();
 }
