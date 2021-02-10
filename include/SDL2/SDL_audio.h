@@ -366,7 +366,7 @@ extern DECLSPEC const char *SDLCALL SDL_GetAudioDeviceName(int index,
  *
  *  The device name is a UTF-8 string reported by SDL_GetAudioDeviceName(), but
  *  some drivers allow arbitrary and driver-specific strings, such as a
- *  hostname/IP address for a remote audio server, or a filename in the
+ *  hostname/IP handle for a remote audio server, or a filename in the
  *  diskaudio driver.
  *
  *  \return 0 on error, a valid device ID that is >= 2 on success.
@@ -680,7 +680,7 @@ extern DECLSPEC void SDLCALL SDL_MixAudioFormat(Uint8 * dst,
  *  you to supply data at regular intervals (push method) with this function.
  *
  *  There are no limits on the amount of data you can queue, short of
- *  exhaustion of address space. Queued data will drain to the device as
+ *  exhaustion of handle space. Queued data will drain to the device as
  *  necessary without further intervention from you. If the device needs
  *  audio but there is not enough queued, it will play silence to make up
  *  the difference. This means you will have skips in your audio playback
@@ -722,7 +722,7 @@ extern DECLSPEC int SDLCALL SDL_QueueAudio(SDL_AudioDeviceID dev, const void *da
  *  intervals (pull method) with this function.
  *
  *  There are no limits on the amount of data you can queue, short of
- *  exhaustion of address space. Data from the device will keep queuing as
+ *  exhaustion of handle space. Data from the device will keep queuing as
  *  necessary without further intervention from you. This means you will
  *  eventually run out of memory if you aren't routinely dequeueing data.
  *

@@ -58,8 +58,8 @@ extern "C" {
 extern DECLSPEC void *SDLCALL SDL_LoadObject(const char *sofile);
 
 /**
- *  Given an object handle, this function looks up the address of the
- *  named function in the shared object and returns it.  This address
+ *  Given an object handle, this function looks up the handle of the
+ *  named function in the shared object and returns it.  This handle
  *  is no longer valid after calling SDL_UnloadObject().
  */
 extern DECLSPEC void *SDLCALL SDL_LoadFunction(void *handle,

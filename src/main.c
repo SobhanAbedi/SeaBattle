@@ -8,14 +8,9 @@
 #include "Mechanism.h"
 
 int main(int argv, char *argc[]) {
-    bool is_running = true;
     init_systems();
-    SDL_Delay(1000);
 
-    while(is_running){
-        if(!check_window())
-            is_running = false;
-    }
+    run_game();
 
     close_systems();
     return 0;

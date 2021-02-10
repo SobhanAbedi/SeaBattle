@@ -28,7 +28,7 @@ void init_systems()
 {
     init_ship_tmps();
     srand(time(NULL));
-    init_graphics(1280, 720);
+    init_graphics(1280, 720, 0);
 }
 
 struct config_ship_list* new_config_ship_list_ent(struct ship_tmp *ship, int count)
