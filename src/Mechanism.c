@@ -9,7 +9,6 @@
 #include "Player.h"
 #include "Android.h"
 #include "Mechanism.h"
-
 #define MAX_SAVE_SIZE 5000
 
 int hit(struct board *brd, int x, int y)
@@ -258,11 +257,11 @@ bool show_saves(bool verbose)
     return not_empty;
 }
 
-void load_game()
+bool load_game()
 {
     //printf("Game Saves:\n");
     if(!show_saves(false))
-        return;
+        return false;
     char name[NAME_LEN];
     printf("Enter Name to Load the Saved Game:\n");
     fflush(stdin);
@@ -276,14 +275,14 @@ void load_game()
     if(fin == NULL || fin_meta == NULL ){
         if(fout == NULL || fout_meta == NULL){
             printf("Could Not Open The Save File\n");
-            return;
+            return false;
         }
         printf("There are no saved games. (weird)\n");
         fclose(fout_meta);
         fclose(fout);
         remove("../resources/saves/0_saves");
         remove("../resources/saves/0_meta");
-        return;
+        return true;
     }
     //printf("loaded correctly\n");
     struct meta *met = (struct meta*)malloc(sizeof(struct meta));
@@ -306,7 +305,7 @@ void load_game()
             remove("../resources/saves/meta");
             rename("../resources/saves/0_saves", "../resources/saves/saves");
             rename("../resources/saves/0_meta",  "../resources/saves/meta");
-            return;
+            return false;
         }
     }
     if(!found){
@@ -317,11 +316,16 @@ void load_game()
         fclose(fout_meta);
         remove("../resources/saves/0_saves");
         remove("../resources/saves/0_meta");
-        return;
+        return true;
     }
     int points_pl1 = 0, points_pl2 = 0;
     struct player *pl1 = load_enactor(false, &points_pl2, fin);
-    struct player *pl2 = load_enactor(!met->is_pvp, &points_pl1, fin);
+    struct player *pl2;
+    struct android *bot;
+    if(met->is_pvp)
+        pl2 = load_enactor(!met->is_pvp, &points_pl1, fin);
+    else
+        bot = load_enactor(!met->is_pvp, &points_pl1, fin);
     if(pl1 == NULL || pl2 == NULL){
         printf("Could Not Load Players\n");
         destroy_player(pl1);
@@ -334,10 +338,13 @@ void load_game()
         remove("../resources/saves/meta");
         rename("../resources/saves/0_saves", "../resources/saves/saves");
         rename("../resources/saves/0_meta",  "../resources/saves/meta");
-        return;
+        return false;
     }
     pl1->points = points_pl1;
-    pl2->points = points_pl2;
+    if(met->is_pvp)
+        pl2->points = points_pl2;
+    else
+        bot->points = points_pl2;
 
     while(fread(met, sizeof(struct meta), 1, fin_meta)){
         if(fwrite(met, sizeof(struct meta), 1, fout_meta) == 0 ||
@@ -352,7 +359,7 @@ void load_game()
             remove("../resources/saves/meta");
             rename("../resources/saves/0_saves", "../resources/saves/saves");
             rename("../resources/saves/0_meta",  "../resources/saves/meta");
-            return;
+            return false;
         }
     }
     fclose(fin);
@@ -363,12 +370,21 @@ void load_game()
     remove("../resources/saves/0_meta");
     if(met->is_pvp)
         run_game_pvp(pl1, pl2);
+    else
+        run_game_pvb(pl2, bot);
+    return true;
 }
 
-void init_game_pvp()
+bool init_game_pvp()
 {
     struct player *pl1 = init_player(-1), *pl2 = init_player(pl1->iden->ID);
+    if(pl1 == NULL || pl2 == NULL) {
+        free(pl1);
+        free(pl2);
+        return false;
+    }
     run_game_pvp(pl1, pl2);
+    return true;
 }
 
 void run_game_pvp(struct player *pl1, struct player *pl2)
@@ -404,11 +420,14 @@ void run_game_pvp(struct player *pl1, struct player *pl2)
     destroy_player(pl2);
 }
 
-void init_game_pvb()
+bool init_game_pvb()
 {
     struct player *pl = init_player(-1);
+    if(pl == NULL)
+        return false;
     struct android *bot = init_bot();
     run_game_pvb(pl, bot);
+    return true;
 }
 
 void run_game_pvb(struct player *pl, struct android *bot)

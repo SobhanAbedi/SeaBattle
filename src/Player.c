@@ -8,9 +8,17 @@
 #include <string.h>
 #include "Player.h"
 #include "Board.h"
+#include "Graphics.h"
 
 struct identity* get_identity(int other_player_ID)
 {
+    char name[NAME_LEN];
+    strcpy(name, "Player 1");
+    //printf("Enter Your Name: ");
+    //fflush(stdin);
+    //gets(name);
+    if(!get_name(name))
+        return NULL;
     FILE *fin = fopen("../resources/players/players", "rb");
     if(fin == NULL){
         FILE *fout = fopen("../resources/players/players", "wb");
@@ -22,10 +30,6 @@ struct identity* get_identity(int other_player_ID)
         }
     }
     int last_ID;
-    char name[NAME_LEN];
-    printf("Enter Your Name: ");
-    fflush(stdin);
-    gets(name);
     struct identity *iden = (struct identity*)malloc(sizeof(struct identity));
     while(fread(iden, sizeof(struct identity), 1, fin)){
         if(strcmp(name, iden->name) == 0){
@@ -124,6 +128,10 @@ struct player* init_player(int other_player_ID)
 {
     struct player *pl = (struct player*)malloc(sizeof(struct player));
     pl->iden = get_identity(other_player_ID);
+    if(pl->iden == NULL) {
+        free(pl);
+        return NULL;
+    }
     pl->brd = init_board();
     pl->points = 0;
     return pl;

@@ -13,6 +13,7 @@
 #include "SDL2/SDL_image.h"
 #include "SDL2/SDL_ttf.h"
 #include "Player.h"
+#include "Mechanism.h"
 
 //struct declarations
 struct window;
@@ -31,6 +32,8 @@ bool init_graphics(int w, int h, int theme);
 struct asset* get_board_assets();
 struct event_result menu_check_event(int start_height, int step, int x, SDL_Rect *button_rect, int cur_active_button);
 int load_menu();
+struct event_result name_check_event(SDL_Rect *button_rect, bool button_active);
+bool get_name(char* name);
 //struct event_result check_event();
 bool run_game();
 bool close_graphics();
@@ -41,7 +44,7 @@ struct window {
     SDL_Texture *texture_target;
     SDL_Renderer *renderer;
     int w, h;
-    int type; //-1:closed, 0:loading page, 1:menu, 2:get player, 3:load game, 4:game board, 5: save game, 6:config page
+    int type; //-1:closed, 0:loading page, 1:menu, 2:get player, 3:load game, 4:game board, 5:save game, 6:config page
 };
 
 struct event_result {

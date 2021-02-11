@@ -2,7 +2,13 @@
 // Created by Sobhan on 2/10/2021.
 //
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 #include "Graphics.h"
+#include "Player.h"
+#include "Mechanism.h"
 
 struct window main_window;
 struct page *pages;
@@ -43,9 +49,9 @@ void load_asset(char *main_path, char *name, int theme, int w, int h, struct ass
     (*dst).texture = load_texture(temp_path, main_window.renderer);
     (*dst).rect.x = 0;
     (*dst).rect.y = 0;
-    if(w == -1 || h == -1)
-        SDL_QueryTexture((*dst).texture, NULL, NULL, &((*dst).rect.w), &((*dst).rect.w));
-    else {
+    if(w == -1 || h == -1) {
+        SDL_QueryTexture((*dst).texture, NULL, NULL, &((*dst).rect.w), &((*dst).rect.h));
+    } else {
         (*dst).rect.w = w;
         (*dst).rect.h = h;
     }
@@ -96,8 +102,8 @@ bool init_graphics(int w, int h, int theme)
 
 
 
-    //Loading pages. There will be 6 pages: 0:loading page, 1:menu, 2:get player, 3:load game, 4:game board, 5: save game, 6:config page
-    pages = (struct page*)malloc(6 * sizeof(struct page));
+    //Loading pages. There will be 6 pages: 0:loading page, 1:menu, 2:get player or save game, 3:load game, 4:game board, 5:config page
+    pages = (struct page*)malloc(5 * sizeof(struct page));
     char main_path[128] = "../resources/graphics/png/";
     char name[128];
 
@@ -117,8 +123,15 @@ bool init_graphics(int w, int h, int theme)
         load_asset(main_path, name,0, 300, 100, &(pages[1].placeable_assets[i]));
     }
 
-    //loading 2:get player aka simple_text_input
-
+    //loading 2:get player
+    strcpy(name, "name.png");
+    pages[2].background.texture = NULL;
+    pages[2].placeable_asset_count = 3;
+    pages[2].placeable_assets = (struct asset*)malloc(pages[2].placeable_asset_count * sizeof(struct asset));
+    for(int i = 0; i < pages[2].placeable_asset_count; i++){
+        sprintf(name, "name_%d.png", i);
+        load_asset(main_path, name,-1, -1, -1, &(pages[2].placeable_assets[i]));
+    }
     //loading 3:load game
 
     //loading 4:game board
@@ -130,7 +143,8 @@ bool init_graphics(int w, int h, int theme)
         sprintf(name, "board_%d.png", i);
         load_asset(main_path, name,-1, -1, -1, &(pages[4].placeable_assets[i]));
     }
-    //loading 5:save game aka simple_text_input
+
+    //loading 5: save game
 
     //loading 6:config page
 
@@ -284,9 +298,9 @@ int load_menu()
             text_rect.y += 50;
         }
         SDL_Rect dst_rect = {300, 0, 300, 100};
-        int star_height = 180, step = 104;
+        int start_height = 180, step = 104;
         for (int i = 0; i < 5; i++) {
-            dst_rect.y = star_height + step * i;
+            dst_rect.y = start_height + step * i;
             int n = i * 2;
             if (i == active_button)
                 n++;
@@ -296,7 +310,7 @@ int load_menu()
         SDL_SetRenderTarget(main_window.renderer, NULL);
         SDL_RenderCopy(main_window.renderer, main_window.texture_target, NULL, NULL);
         SDL_RenderPresent(main_window.renderer);
-        res = menu_check_event(star_height, step, dst_rect.x, &(pages[1].placeable_assets[0].rect), active_button);
+        res = menu_check_event(start_height, step, dst_rect.x, &(pages[1].placeable_assets[0].rect), active_button);
         //printf("%d %d\n", res.x1, res.x2);
         if(res.x1 == 1)
             active_button = res.x2;
@@ -319,14 +333,150 @@ int load_menu()
     if(res.x1 == -1 && res.x2 == -1)
         return -1;
     if(res.x1 == 2) {
-        switch (res.x2) {
-            case 4:
-                return -1;
-            default:
-                return 1;
-        }
+        return res.x2;
     }
     return 1;
+}
+
+struct event_result name_check_event(SDL_Rect *button_rect, bool button_active)
+{
+    //if(evnt.type == SDL_MOUSEMOTION)
+    //    printf("%d, %d\n", evnt.motion.x, evnt.motion.y);
+    SDL_Event evnt;
+    struct event_result res = {0, 0, false};
+    while (!res.made_change) {
+        while (!SDL_PollEvent(&evnt))
+            SDL_Delay(10);
+        if (evnt.type == SDL_QUIT) {
+            res.x1 = res.x2 = -1;
+            res.made_change = true;
+            break;
+        } else if (evnt.type == SDL_MOUSEMOTION) {
+            bool still_active = false;
+            if (evnt.motion.x >= button_rect->x && evnt.motion.x <= button_rect->x + button_rect->w &&
+                evnt.motion.y >= button_rect->y && evnt.motion.y <= button_rect->y + button_rect->h) {
+                if(button_active){
+                    still_active = true;
+                }else {
+                    res.x1 = 1;
+                    res.made_change = true;
+                    return res;
+                }
+            }
+
+            if(button_active && !still_active) {
+                res.made_change = true;
+                return res;
+            }
+        } else if (evnt.type == SDL_MOUSEBUTTONDOWN && evnt.button.button == SDL_BUTTON_LEFT) {
+            if (evnt.button.x >= button_rect->x && evnt.button.x <= button_rect->x + button_rect->w &&
+                evnt.button.y >= button_rect->y && evnt.button.y <= button_rect->y + button_rect->h) {
+                res.x1 = 2;
+                res.made_change = true;
+                return res;
+            }
+        } else if (evnt.type == SDL_TEXTINPUT){
+            res.x1 = 3;
+            res.x2 = (int)(evnt.text.text[0]);
+            res.made_change = true;
+        } else if(evnt.type == SDL_KEYDOWN && evnt.key.keysym.sym == SDLK_BACKSPACE){
+            res.x1 = 3;
+            res.x2 = -1;
+            res.made_change = true;
+        } else if(evnt.type == SDL_KEYDOWN && (evnt.key.keysym.sym == SDLK_KP_ENTER || evnt.key.keysym.sym == SDLK_RETURN)){
+            res.x1 = 2;
+            res.made_change = true;
+        }
+    }
+    return res;
+}
+
+bool get_name(char* name)
+{
+    main_window.type = 2;
+
+    //Writing some text
+    TTF_Font *font = load_font_bold(36);
+    SDL_Color text_color = {200 , 200, 200, 255};
+    SDL_Surface *text_surface = TTF_RenderText_Blended(font, "Enter Your Name", text_color);
+    SDL_Texture *title_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
+    SDL_SetTextureBlendMode(title_texture, SDL_BLENDMODE_BLEND);
+    SDL_Rect title_rect;
+    title_rect.y = 250;
+    SDL_QueryTexture(title_texture, NULL, NULL, &title_rect.w, &title_rect.h);
+    title_rect.x = 640 - (title_rect.w / 2);
+
+    SDL_FreeSurface(text_surface);
+    text_surface = NULL;
+    free(font);
+
+    font = load_font_regular(24);
+    struct SDL_Texture *name_texture;
+    SDL_Rect name_rect = {360, 0, 0, 0};
+    SDL_Rect text_box = {350, 300, 580, 70};
+    SDL_Color back_color = {0 , 100, 100, 160};
+
+    for(int i = 0; i < 3; i++){
+        pages[2].placeable_assets[i].rect.x = 640 - (pages[2].placeable_assets[i].rect.w / 2);
+        pages[2].placeable_assets[i].rect.y = 400;
+    }
+    bool button_active = false;
+    struct event_result res;
+    int n;
+    do{
+        SDL_SetRenderDrawColor(main_window.renderer, 120, 120, 130, 255);
+        SDL_RenderClear(main_window.renderer);
+
+        SDL_RenderCopy(main_window.renderer, title_texture, NULL, &title_rect);
+
+        SDL_SetRenderDrawColor(main_window.renderer, 0, 100, 100, 255);
+        SDL_RenderFillRect(main_window.renderer, &text_box);
+        SDL_SetRenderDrawColor(main_window.renderer, 0, 0, 0, 255);
+
+        text_surface = TTF_RenderText_Shaded(font, name, text_color, back_color);
+        name_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
+        SDL_QueryTexture(name_texture, NULL, NULL, &name_rect.w, &name_rect.h);
+        name_rect.y = text_box.y + (text_box.h - name_rect.h) / 2;
+        SDL_RenderCopy(main_window.renderer, name_texture, NULL, &name_rect);
+
+        n = 0;
+        if(button_active)
+            n = 1;
+        if(strlen(name) < 3 || strlen(name) >= 16)
+            n = 2;
+        //printf("%d: %d %d %d %d\n", n, pages[2].placeable_assets[n].rect.x, pages[2].placeable_assets[n].rect.y, pages[2].placeable_assets[n].rect.w, pages[2].placeable_assets[n].rect.h);
+
+        SDL_RenderCopy(main_window.renderer, pages[2].placeable_assets[n].texture, NULL, &(pages[2].placeable_assets[n].rect));
+        SDL_RenderPresent(main_window.renderer);
+        res = name_check_event(&(pages[2].placeable_assets[n].rect), button_active);
+        //printf("%d %d\n", res.x1, res.x2);
+        if(res.x1 == 1)
+            button_active = true;
+        else if(res.x1 == 0)
+            button_active = false;
+        else if(res.x1 == 3) {
+            int size = strlen(name);
+            if(res.x2 == -1){
+                if(size > 0) {
+                    name[size - 1] = 0;
+                }
+            }else if(size < 16){
+                name[size++] = (char)res.x2;
+                name[size] = 0;
+            }
+        }
+    } while(res.x1 == 0 || res.x1 == 1 || res.x1 == 3 || n == 2);
+
+    SDL_FreeSurface(text_surface);
+    text_surface = NULL;
+    free(font);
+    SDL_DestroyTexture(title_texture);
+    title_texture = NULL;
+    if(res.x1 == -1)
+        return false;
+    if(res.x1 == 2)
+        return true;
+
 }
 
 /*
@@ -355,6 +505,7 @@ struct event_result check_event()
 bool run_game()
 {
     bool is_running = true;
+    int res, run_res;
     while(is_running){
         switch (main_window.type) {
             case -1:
@@ -363,7 +514,32 @@ bool run_game()
                 main_window.type = 1;
                 break;
             case 1:
-                main_window.type = load_menu();
+                res = load_menu();
+                switch (res) {
+                    case 0:
+                        if(!init_game_pvb())
+                            main_window.type = -1;
+                        else
+                            main_window.type = 1;
+                        break;
+                    case 1:
+                        if(!init_game_pvp())
+                            main_window.type = -1;
+                        else
+                            main_window.type = 1;
+                        break;
+                    case 2:
+                        if(!load_game())
+                            main_window.type = -1;
+                        else
+                            main_window.type = 1;
+                        break;
+                    case 4:
+                        main_window.type = -1;
+                        break;
+                    default:
+                        main_window.type = 1;
+                }
                 break;
             default:
                 printf("Unknown page requested\n");

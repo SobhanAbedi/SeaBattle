@@ -5,7 +5,12 @@
 #ifndef SEABATTLE_PLAYER_H
 #define SEABATTLE_PLAYER_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 #include "Board.h"
+#include "Player.h"
 #include "Config.h"
 #define NAME_LEN 64
 //struct declarations

@@ -5,6 +5,14 @@
 #ifndef SEABATTLE_MECHANISM_H
 #define SEABATTLE_MECHANISM_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "Board.h"
+#include "Player.h"
+#include "Android.h"
+#define NAME_LEN 64
+
 //struct declarations
 struct meta;
 
@@ -17,10 +25,10 @@ bool save_enactor(void *en, bool is_bot, FILE *fout);
 void* load_enactor(bool is_bot, int *points, FILE *fin);
 bool save_game(struct player *offensive_pl, void *defensive, bool is_pvp);
 bool show_saves(bool verbose);
-void load_game();
-void init_game_pvp();
+bool load_game();
+bool init_game_pvp();
 void run_game_pvp(struct player *pl1, struct player *pl2);
-void init_game_pvb();
+bool init_game_pvb();
 void run_game_pvb(struct player *pl, struct android *bot);
 
 

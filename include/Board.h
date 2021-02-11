@@ -5,10 +5,13 @@
 #ifndef SEABATTLE_BOARD_H
 #define SEABATTLE_BOARD_H
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include "Config.h"
 #include "SDL2/SDL.h"
 #include "Graphics.h"
+
 
 //struct declarations
 struct ship_tmp;
@@ -16,7 +19,9 @@ struct location;
 struct location_ext;
 struct ship_list;
 struct house;
+struct house_min;
 struct board;
+struct board_min;
 
 //function declarations
 struct ship_tmp new_ship_tmp(int len, int wid, int points, struct asset *ast);
