@@ -43,8 +43,12 @@ void load_asset(char *main_path, char *name, int theme, int w, int h, struct ass
     (*dst).texture = load_texture(temp_path, main_window.renderer);
     (*dst).rect.x = 0;
     (*dst).rect.y = 0;
-    (*dst).rect.w = w;
-    (*dst).rect.h = h;
+    if(w == -1 || h == -1)
+        SDL_QueryTexture((*dst).texture, NULL, NULL, &((*dst).rect.w), &((*dst).rect.w));
+    else {
+        (*dst).rect.w = w;
+        (*dst).rect.h = h;
+    }
 }
 
 TTF_Font* load_font_bold(int size)
@@ -113,7 +117,22 @@ bool init_graphics(int w, int h, int theme)
         load_asset(main_path, name,0, 300, 100, &(pages[1].placeable_assets[i]));
     }
 
-    //loading 2:get player
+    //loading 2:get player aka simple_text_input
+
+    //loading 3:load game
+
+    //loading 4:game board
+    strcpy(name, "board.png");
+    load_asset(main_path, name,-1, w, h, &pages[4].background);
+    pages[4].placeable_asset_count = 11;
+    pages[4].placeable_assets = (struct asset*)malloc(pages[4].placeable_asset_count * sizeof(struct asset));
+    for(int i = 0; i < pages[4].placeable_asset_count; i++){
+        sprintf(name, "board_%d.png", i);
+        load_asset(main_path, name,-1, -1, -1, &(pages[4].placeable_assets[i]));
+    }
+    //loading 5:save game aka simple_text_input
+
+    //loading 6:config page
 
     //Showing Splash screen
     SDL_SetRenderDrawColor(main_window.renderer, 200, 200, 230, 255);
@@ -142,6 +161,11 @@ bool init_graphics(int w, int h, int theme)
     SDL_RenderPresent(main_window.renderer);
     SDL_Delay(1000);
     return true;
+}
+
+struct asset* get_board_assets()
+{
+    return pages[4].placeable_assets;
 }
 
 struct event_result menu_check_event(int start_height, int step, int x, SDL_Rect *button_rect, int cur_active_button)
@@ -304,6 +328,7 @@ int load_menu()
     }
     return 1;
 }
+
 /*
 struct event_result check_event()
 {
@@ -326,6 +351,7 @@ struct event_result check_event()
     return res;
 }
 */
+
 bool run_game()
 {
     bool is_running = true;

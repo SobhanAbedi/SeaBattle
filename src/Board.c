@@ -8,12 +8,13 @@
 #include "Config.h"
 #include "Android.h"
 
-struct ship_tmp new_ship_tmp(int len, int wid, int points)
+struct ship_tmp new_ship_tmp(int len, int wid, int points, struct asset *ast)
 {
     struct ship_tmp ship;
     ship.len = len;
     ship.wid = wid;
     ship.points = points;
+    ship.asset = ast;
     return ship;
 }
 
@@ -465,6 +466,7 @@ struct board_min* get_board_for_bot(struct board *brd)
         brd_min->afloat_ships[i].wid = cur->ship->wid;
         brd_min->afloat_ships[i].len = cur->ship->len;
         brd_min->afloat_ships[i].points = cur->ship->points;
+        brd_min->afloat_ships[i].asset = NULL;
         cur = cur->next;
     }
     return brd_min;

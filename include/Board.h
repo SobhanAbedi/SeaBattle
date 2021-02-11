@@ -7,6 +7,8 @@
 
 #include <stdbool.h>
 #include "Config.h"
+#include "SDL2/SDL.h"
+#include "Graphics.h"
 
 //struct declarations
 struct ship_tmp;
@@ -17,7 +19,7 @@ struct house;
 struct board;
 
 //function declarations
-struct ship_tmp new_ship_tmp(int len, int wid, int points);
+struct ship_tmp new_ship_tmp(int len, int wid, int points, struct asset *ast);
 struct ship_list* new_ship_list_ent(struct ship_tmp *ship, struct location *ploc);
 struct location_ext* get_location_ext(struct location *loc);
 bool can_place_ship(struct house** square, int board_size, struct ship_tmp *ship, struct location_ext *loc);
@@ -45,6 +47,7 @@ void destroy_board_min(struct board_min *brd, bool is_final);
 //struct definitions
 struct ship_tmp{
     int len, wid, points;
+    struct asset *asset;
 };
 
 struct location{

@@ -28,6 +28,7 @@ TTF_Font* load_font_regular(int size);
 void load_asset(char *main_path, char *name, int theme, int w, int h, struct asset* dst);
 bool init_graphics(int w, int h, int theme);
 bool init_graphics(int w, int h, int theme);
+struct asset* get_board_assets();
 struct event_result menu_check_event(int start_height, int step, int x, SDL_Rect *button_rect, int cur_active_button);
 int load_menu();
 //struct event_result check_event();
