@@ -25,11 +25,12 @@ bool save_enactor(void *en, bool is_bot, FILE *fout);
 void* load_enactor(bool is_bot, int *points, FILE *fin);
 bool save_game(struct player *offensive_pl, void *defensive, bool is_pvp);
 bool show_saves(bool verbose);
+int get_saves(char **list);
 bool load_game();
 bool init_game_pvp();
-void run_game_pvp(struct player *pl1, struct player *pl2);
+bool run_game_pvp(struct player *pl1, struct player *pl2);
 bool init_game_pvb();
-void run_game_pvb(struct player *pl, struct android *bot);
+bool run_game_pvb(struct player *pl, struct android *bot);
 
 
 //struct definitions

@@ -169,7 +169,20 @@ void* load_enactor(bool is_bot, int *points, FILE *fin)
 
 bool save_game(struct player *offensive_pl, void *defensive, bool is_pvp)
 {
+    save_identity(offensive_pl, -1);
+    if(is_pvp)
+        save_identity((struct player*)defensive, -1);
+
     int save_id = get_first_free_int();
+    char name[NAME_LEN];
+    sprintf(name, "Save %d", save_id);
+    if(!get_save_name(name))
+        return false;
+    if(name[0] == 0) {
+        printf("didn't save\n");
+        return true;
+    }
+    printf("%s saved\n", name);
     FILE *meta_fout = fopen("../resources/saves/meta", "r+b");
     FILE *fout = fopen("../resources/saves/saves", "r+b");
     if(fout == NULL || meta_fout == NULL){
@@ -190,11 +203,15 @@ bool save_game(struct player *offensive_pl, void *defensive, bool is_pvp)
     struct meta *met = (struct meta*)malloc(sizeof(struct meta));
     met->ID = save_id;
     met->is_pvp = is_pvp;
+    strcpy(met->save_name, name);
+
+    /*
     printf("Enter save name: (Default: Save %d)\n", save_id);
     fflush(stdin);
     gets(met->save_name);
     if(met->save_name[0] == 0)
         sprintf(met->save_name, "Save %d", save_id);
+    */
     if(save_enactor(offensive_pl, false, fout) && save_enactor(defensive, !is_pvp, fout)){
         end_loc = ftell(fout);
         met->size = end_loc - beg_loc;
@@ -251,15 +268,56 @@ bool show_saves(bool verbose)
     return not_empty;
 }
 
+int get_saves(char **list)
+{
+    FILE *fin = fopen("../resources/saves/meta", "rb");
+    if(fin == NULL){
+        FILE  *fout = fopen("../resources/saves/meta", "wb");
+        fclose(fout);
+        fin = fopen("../resources/saves/meta", "rb");
+        if(fin == NULL){
+            printf("Could Not Load Saves Meta File\n");
+            return -1;
+        }
+        fclose(fin);
+        printf("There are no saves\n");
+        return 0;
+    }
+    bool not_empty = false;
+    struct meta *met = (struct meta*)malloc(sizeof(struct meta));
+    int k = 0;
+    while(k < 10 && fread(met, sizeof(struct meta), 1, fin)){
+        sprintf(list[k],"%s", met->save_name);
+        not_empty = true;
+        k++;
+    }
+    free(met);
+    fclose(fin);
+    if(!not_empty)
+        printf("There are no saves\n");
+    return k;
+}
+
 bool load_game()
 {
     //printf("Game Saves:\n");
+    /*
     if(!show_saves(false))
         return true;
     char name[NAME_LEN];
     printf("Enter Name to Load the Saved Game:\n");
     fflush(stdin);
     gets(name);
+     */
+
+    char name[NAME_LEN];
+    if(!get_load_name(name))
+        return false;
+    if(name[0] == 0){
+        printf("There are No Saves\n");
+        return true;
+    }
+
     rename("../resources/saves/saves", "../resources/saves/0_saves");
     rename("../resources/saves/meta",  "../resources/saves/0_meta");
     FILE *fin_meta = fopen("../resources/saves/0_meta", "rb");
@@ -361,10 +419,11 @@ bool load_game()
     fclose(fout_meta);
     remove("../resources/saves/0_saves");
     remove("../resources/saves/0_meta");
+    bool run_res;
     if(met->is_pvp)
-        run_game_pvp(pl1, pl2);
+        run_res = run_game_pvp(pl1, pl2);
     else
-        run_game_pvb(pl1, bot);
+        run_res = run_game_pvb(pl1, bot);
     free(met);
     return true;
 }
@@ -377,11 +436,10 @@ bool init_game_pvp()
         free(pl2);
         return false;
     }
-    run_game_pvp(pl1, pl2);
-    return true;
+    return run_game_pvp(pl1, pl2);
 }
 
-void run_game_pvp(struct player *pl1, struct player *pl2)
+bool run_game_pvp(struct player *pl1, struct player *pl2)
 {
     disp_player_fast(pl1, true);
     disp_player_fast(pl2, true);
@@ -399,7 +457,10 @@ void run_game_pvp(struct player *pl1, struct player *pl2)
         if(save_identity(defensive_pl, 0))
             printf("Looser Results Saved\n");
     }
+    bool res;
     if(state == -1){
+        res = save_game(offensive_pl, defensive_pl, true);
+        /*
         int choice;
         printf("Do you want to save the game? (No:0, Yes:1) ");
         scanf("%d", &choice);
@@ -409,9 +470,11 @@ void run_game_pvp(struct player *pl1, struct player *pl2)
             else
                 printf("Could Not Save The Game");
         }
+         */
     }
     destroy_player(pl1);
     destroy_player(pl2);
+    return res;
 }
 
 bool init_game_pvb()
@@ -420,11 +483,10 @@ bool init_game_pvb()
     if(pl == NULL)
         return false;
     struct android *bot = init_bot();
-    run_game_pvb(pl, bot);
-    return true;
+    return run_game_pvb(pl, bot);
 }
 
-void run_game_pvb(struct player *pl, struct android *bot)
+bool run_game_pvb(struct player *pl, struct android *bot)
 {
     disp_player_fast(pl, true);
     disp_android_fast(bot, true);
@@ -440,7 +502,10 @@ void run_game_pvb(struct player *pl, struct android *bot)
     if(state == 0 && !pl_turn && save_identity(pl, 0)){
         printf("Your Results Saved\n");
     }
+    bool res;
     if(state == -1) {
+        res = save_game(pl, bot, false);
+        /*
         int choice;
         printf("Do you want to save the game? (No:0, Yes:1) ");
         scanf("%d", &choice);
@@ -450,7 +515,9 @@ void run_game_pvb(struct player *pl, struct android *bot)
             else
                 printf("Could Not Save The Game");
         }
+         */
     }
     destroy_player(pl);
     destroy_android(bot);
+    return res;
 }

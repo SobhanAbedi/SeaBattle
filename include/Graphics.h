@@ -26,14 +26,18 @@ SDL_Texture *load_texture(char* file_path, SDL_Renderer *render_target);
 void theme_to_path(char* path, int theme);
 TTF_Font* load_font_bold(int size);
 TTF_Font* load_font_regular(int size);
-void load_asset(char *main_path, char *name, int theme, int w, int h, struct asset* dst);
+void load_asset(char *main_path, char *name, int texture_count, int theme, int w, int h, struct asset* dst);
 bool init_graphics(int w, int h, int theme);
 bool init_graphics(int w, int h, int theme);
 struct asset* get_board_assets();
 struct event_result menu_check_event(int start_height, int step, int x, SDL_Rect *button_rect, int cur_active_button);
 int load_menu();
 struct event_result name_check_event(SDL_Rect *button_rect, bool button_active);
-bool get_name(char* name);
+bool get_name(char *name);
+struct event_result save_name_check_event(SDL_Rect *button_rect, int active_button);
+bool get_save_name(char *name);
+struct event_result load_name_check_event(SDL_Rect *button_rect, bool button_active);
+bool get_load_name(char *name);
 //struct event_result check_event();
 bool run_game();
 bool close_graphics();
@@ -53,8 +57,9 @@ struct event_result {
 };
 
 struct asset{
-    SDL_Texture *texture;
+    SDL_Texture **texture;
     SDL_Rect rect;
+    int cur_texture;
 };
 
 struct page{
@@ -62,5 +67,6 @@ struct page{
     int placeable_asset_count;
     struct asset *placeable_assets;
 };
+
 
 #endif //SEABATTLE_GRAPHICS_H
