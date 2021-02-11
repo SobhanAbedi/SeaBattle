@@ -162,7 +162,6 @@ bool save_enactor(void *en, bool is_bot, FILE *fout)
 
 void* load_enactor(bool is_bot, int *points, FILE *fin)
 {
-    printf("load_enactor\n");
     if(is_bot)
         return read_bot_from_file(points, fin);
     return read_player_from_file(points, fin);
@@ -170,11 +169,6 @@ void* load_enactor(bool is_bot, int *points, FILE *fin)
 
 bool save_game(struct player *offensive_pl, void *defensive, bool is_pvp)
 {
-    if(is_pvp){
-        struct player *defensive_pl = (struct player*)defensive;
-    } else{
-        struct bot *defensive_bot = (struct bot*)defensive;
-    }
     int save_id = get_first_free_int();
     FILE *meta_fout = fopen("../resources/saves/meta", "r+b");
     FILE *fout = fopen("../resources/saves/saves", "r+b");
@@ -261,7 +255,7 @@ bool load_game()
 {
     //printf("Game Saves:\n");
     if(!show_saves(false))
-        return false;
+        return true;
     char name[NAME_LEN];
     printf("Enter Name to Load the Saved Game:\n");
     fflush(stdin);
@@ -284,7 +278,6 @@ bool load_game()
         remove("../resources/saves/0_meta");
         return true;
     }
-    //printf("loaded correctly\n");
     struct meta *met = (struct meta*)malloc(sizeof(struct meta));
     char *temp_str = (char*)malloc(MAX_SAVE_SIZE * sizeof(char));
     bool found = false;
@@ -320,13 +313,14 @@ bool load_game()
     }
     int points_pl1 = 0, points_pl2 = 0;
     struct player *pl1 = load_enactor(false, &points_pl2, fin);
-    struct player *pl2;
-    struct android *bot;
-    if(met->is_pvp)
-        pl2 = load_enactor(!met->is_pvp, &points_pl1, fin);
-    else
-        bot = load_enactor(!met->is_pvp, &points_pl1, fin);
-    if(pl1 == NULL || pl2 == NULL){
+    struct player *pl2 = NULL;
+    struct android *bot = NULL;
+    if(met->is_pvp) {
+        pl2 = load_enactor(false, &points_pl1, fin);
+    } else {
+        bot = load_enactor(true, &points_pl1, fin);
+    }
+    if(pl1 == NULL || (pl2 == NULL && bot == NULL)){
         printf("Could Not Load Players\n");
         destroy_player(pl1);
         destroy_player(pl2);
@@ -345,7 +339,6 @@ bool load_game()
         pl2->points = points_pl2;
     else
         bot->points = points_pl2;
-
     while(fread(met, sizeof(struct meta), 1, fin_meta)){
         if(fwrite(met, sizeof(struct meta), 1, fout_meta) == 0 ||
            fread(temp_str, sizeof(char), met->size, fin) < met->size ||
@@ -371,7 +364,8 @@ bool load_game()
     if(met->is_pvp)
         run_game_pvp(pl1, pl2);
     else
-        run_game_pvb(pl2, bot);
+        run_game_pvb(pl1, bot);
+    free(met);
     return true;
 }
 
@@ -444,7 +438,7 @@ void run_game_pvb(struct player *pl, struct android *bot)
             state = play_android(bot, pl->brd);
     } while (state == 1);
     if(state == 0 && !pl_turn && save_identity(pl, 0)){
-        printf("Looser Results Saved\n");
+        printf("Your Results Saved\n");
     }
     if(state == -1) {
         int choice;
