@@ -37,6 +37,7 @@ bool get_name(char *name);
 struct event_result save_name_check_event(SDL_Rect *button_rect, int active_button);
 bool get_save_name(char *name);
 struct event_result load_name_check_event(SDL_Rect *button_rect, bool button_active);
+bool is_name_valid(char *name, char **list, int list_count);
 bool get_load_name(char *name);
 //struct event_result check_event();
 bool run_game();

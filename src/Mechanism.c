@@ -123,7 +123,7 @@ int play_android(struct android *bot, struct board *brd)
 int get_first_free_int()
 {
     int LUI = 0; //Last Used Integer
-    FILE *fin = fopen("../resources/saves/meta", "r+b");
+    FILE *fin = fopen("../resources/saves/meta", "rb");
     if(fin == NULL){
         fin = fopen("../resources/saves/meta", "wb");
         fclose(fin);
@@ -136,6 +136,7 @@ int get_first_free_int()
     bool skipped, recheck = 1;
     struct meta *met = (struct meta*)malloc(sizeof(struct meta));
     while(recheck) {
+        fseek(fin, SEEK_SET, 0);
         recheck = false;
         skipped = false;
         while (fread(met, sizeof(struct meta), 1, fin)) {
@@ -149,6 +150,7 @@ int get_first_free_int()
             }
         }
     }
+    fclose(fin);
     free(met);
     return LUI + 1;
 }
@@ -179,6 +181,7 @@ bool save_game(struct player *offensive_pl, void *defensive, bool is_pvp)
     if(!get_save_name(name))
         return false;
     if(name[0] == 0) {
+        _fcloseall();
         printf("didn't save\n");
         return true;
     }
@@ -221,6 +224,7 @@ bool save_game(struct player *offensive_pl, void *defensive, bool is_pvp)
             fclose(fout);
             fclose(meta_fout);
             free(met);
+            _fcloseall();
             return true;
         } else
             printf("Could Not Save Meta\n");
