@@ -6,9 +6,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 #include "Graphics.h"
 #include "Player.h"
 #include "Mechanism.h"
+
 
 struct window main_window;
 struct page *pages;
@@ -850,12 +852,18 @@ bool get_load_name(char *name)
 
 struct event_result draw_board_check_event(struct event_result *m_loc, struct event_result pre_res, double width, SDL_Rect *button_rect, bool is_single_click)
 {
+    unsigned int init_time, cur_time;
+    init_time = SDL_GetTicks();
+    cur_time = init_time;
     SDL_Event evnt;
     struct event_result res = {0, 0, false};
     int m, n;
-    while (!res.made_change) {
-        while (!SDL_PollEvent(&evnt))
+    while (!res.made_change && (((cur_time - init_time) < STOP_TIME) || !is_single_click)) {
+
+        while (!SDL_PollEvent(&evnt) && (((cur_time - init_time) < STOP_TIME) || !is_single_click)) {
             SDL_Delay(10);
+            cur_time = SDL_GetTicks();
+        }
         if(evnt.type == SDL_QUIT){
             res.x1 = -1;
             res.x2 = -1;
@@ -875,6 +883,7 @@ struct event_result draw_board_check_event(struct event_result *m_loc, struct ev
                 }
             } else {
                 if(m_loc->x1 != -1) {
+                    m_loc->x1 = m_loc->x2 = -1;
                     res.x1 = 0;
                     res.x2 = 0;
                     res.made_change = true;
@@ -919,6 +928,9 @@ struct event_result draw_board_check_event(struct event_result *m_loc, struct ev
 
 struct event_result draw_board(struct board *brd, struct player_simp *offensive, struct player_simp *defensive, bool is_res_map)
 {
+    unsigned int init_time, cur_time;
+    init_time = SDL_GetTicks();
+    cur_time = init_time;
     main_window.type = 4;
     //printf("ENTERED draw_board");
     double width = 700.0 / brd->size;
@@ -976,7 +988,7 @@ struct event_result draw_board(struct board *brd, struct player_simp *offensive,
         SDL_RenderCopy(main_window.renderer, d_name_texture, NULL, &d_name_rect);
         SDL_RenderCopy(main_window.renderer, d_points_texture, NULL, &d_points_rect);
         int n = 0;
-        if(m_loc.x1 == -1 && m_loc.x2 == -1)
+        if(!is_single_click && res.x1 == 2)
             n = 1;
         SDL_RenderCopy(main_window.renderer, pages[4].placeable_assets[11].texture[n], NULL, &(pages[4].placeable_assets[11].rect));
 
@@ -1011,17 +1023,18 @@ struct event_result draw_board(struct board *brd, struct player_simp *offensive,
             SDL_Point rot_point;
             rot_point.x = ((int)(width / 2));
             rot_point.y = ((int)(width / 2));
+            SDL_SetTextureColorMod(cur_ship->ship->asset->texture[0], 255, 127, 64);
             SDL_RenderCopyEx(main_window.renderer, cur_ship->ship->asset->texture[0], NULL, &ship_rect, 90 * ((4 - cur_ship->loc.dir) % 4), &rot_point, SDL_FLIP_NONE);
-
+            SDL_SetTextureColorMod(cur_ship->ship->asset->texture[0], 255, 255, 255);
             cur_ship = cur_ship->next;
         }
         SDL_RenderPresent(main_window.renderer);
         res = draw_board_check_event(&m_loc, res, width, &(pages[4].placeable_assets[11].rect), is_single_click);
-    } while (!((res.x1 == -1 && res.x2 == -1) || res.x2 == 1) || (res.x1 == 1 && res.x2 == 1 && brd->square[m_loc.x2][m_loc.x1].is_visible));
+        cur_time = SDL_GetTicks();
+    } while ((!((res.x1 == -1 && res.x2 == -1) || res.x2 == 1) || (res.x1 == 1 && res.x2 == 1 && brd->square[m_loc.x2][m_loc.x1].is_visible)) && ((cur_time - init_time < STOP_TIME) || !is_single_click));
     struct event_result ans = {0, 0, 0};
     if(res.x1 == -1 && res.x2 == -1){
-        ans.x1 = -1;
-        ans.x2 = -1;
+        ans.x1 = ans.x2 = -2;
         return ans;
     } else if(res.x1 == 1){
         ans.x1 = m_loc.x1;
@@ -1033,7 +1046,7 @@ struct event_result draw_board(struct board *brd, struct player_simp *offensive,
     } else if(res.x1 == 3){
         return ans;
     }
-
+    return ans;
 }
 
 /*

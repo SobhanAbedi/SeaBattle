@@ -15,6 +15,8 @@
 #include "Player.h"
 #include "Mechanism.h"
 
+#define STOP_TIME 600
+
 //struct declarations
 struct window;
 struct event_result;

@@ -42,6 +42,8 @@ int play_player(struct player *offensive_pl, struct board *defensive_brd, struct
     int x, y, res, sink_points;
     op_simp->points = offensive_pl->points;
     struct event_result loc = draw_board(defensive_brd, op_simp, dp_simp, false);
+    if(loc.x1 == -2 && loc.x2 == -2)
+        return -2;
     res = hit(defensive_brd, loc.x1, loc.x2);
     /*
     do{
@@ -63,7 +65,7 @@ int play_player(struct player *offensive_pl, struct board *defensive_brd, struct
             op_simp->points = offensive_pl->points;
             printf("Result Map:\n");
             disp_board_fast(defensive_brd, 0);
-            draw_board(defensive_brd, op_simp, dp_simp, true);
+            //draw_board(defensive_brd, op_simp, dp_simp, true);
             if(defensive_brd->afloat_ships->next == NULL){
                 printf("You Won :D\n");
                 make_board_visible(defensive_brd);
@@ -75,14 +77,14 @@ int play_player(struct player *offensive_pl, struct board *defensive_brd, struct
             } else{
                 printf("Result Map:\n");
                 disp_board_fast(defensive_brd, 0);
-                draw_board(defensive_brd, op_simp, dp_simp, true);
+                //draw_board(defensive_brd, op_simp, dp_simp, true);
             }
         }
         return play_player(offensive_pl, defensive_brd, op_simp, dp_simp);
     } else {
         printf("Result Map:\n");
         disp_board_fast(defensive_brd, 0);
-        draw_board(defensive_brd, op_simp, dp_simp, true);
+        //draw_board(defensive_brd, op_simp, dp_simp, true);
     }
     if(res == -2)
         return -1;
@@ -93,7 +95,7 @@ int play_android(struct android *bot, struct board *brd, struct player_simp *bot
 {
     //disp_android_fast(bot, false);
     bot_simp->points = bot->points;
-    draw_board(brd, bot_simp, pl_simp, false);
+    //draw_board(brd, bot_simp, pl_simp, true);
     printf("Bot Has %d  Points in Current Game\n", bot->points);
     int res, sink_points;
     double max_found = 10000;
@@ -494,6 +496,8 @@ bool run_game_pvp(struct player *pl1, struct player *pl2)
         dp_simp = tp_simp;
 
         state = play_player(offensive_pl, defensive_pl->brd, op_simp, dp_simp);
+        if(state > -1)
+            draw_board(defensive_pl->brd, op_simp, dp_simp, true);
     } while(state == 1);
     if(state == 0){
         if(save_identity(defensive_pl, 0))
@@ -548,16 +552,17 @@ bool run_game_pvb(struct player *pl, struct android *bot)
         pl_turn = !pl_turn;
         if(pl_turn) {
             state = play_player(pl, bot->brd, &pl_simp, &bot_simp);
-            //draw_board(bot->brd, &pl_simp, &bot_simp, 1000);
+            if(state > -1 )
+                draw_board(bot->brd, &pl_simp, &bot_simp, true);
         } else {
+            draw_board(pl->brd, &bot_simp, &pl_simp, true);
             state = play_android(bot, pl->brd, &bot_simp, &pl_simp);
-            //draw_board(pl->brd, &bot_simp, &pl_simp, 1000);
         }
     } while (state == 1);
     if(state == 0 && !pl_turn && save_identity(pl, 0)){
         printf("Your Results Saved\n");
     }
-    bool res;
+    bool res = false;
     if(state == -1) {
         res = save_game(pl, bot, false);
         /*
