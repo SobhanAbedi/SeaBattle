@@ -148,11 +148,14 @@ bool init_graphics(int w, int h, int theme)
     //loading 4:game board
     strcpy(name, "board_w");
     load_asset(main_path, name, 1, -1, w, h, &pages[4].background);
-    pages[4].placeable_asset_count = 11;
+    pages[4].placeable_asset_count = 12;
     pages[4].placeable_assets = (struct asset*)malloc(pages[4].placeable_asset_count * sizeof(struct asset));
     for(int i = 0; i < pages[4].placeable_asset_count; i++){
         sprintf(name, "board_%d", i);
-        load_asset(main_path, name, 1,  -1, -1, -1, &(pages[4].placeable_assets[i]));
+        int n = 1;
+        if(i == 11)
+            n = 2;
+        load_asset(main_path, name, n,  -1, -1, -1, &(pages[4].placeable_assets[i]));
     }
     printf("page 4 loaded\n");
     //loading 5: save game
@@ -467,7 +470,7 @@ bool get_name(char *name)
             pages[2].placeable_assets[0].cur_texture = 1;
         else
             pages[2].placeable_assets[0].cur_texture = 0;
-        if(strlen(name) < 3 || strlen(name) >= 16)
+        if(strlen(name) < 3 || strlen(name) > 16)
             pages[2].placeable_assets[0].cur_texture = 2;
         //printf("%d: %d %d %d %d\n", n, pages[2].placeable_assets[n].rect.x, pages[2].placeable_assets[n].rect.y, pages[2].placeable_assets[n].rect.w, pages[2].placeable_assets[n].rect.h);
 
@@ -490,7 +493,7 @@ bool get_name(char *name)
                 name[size] = 0;
             }
         }
-    } while(res.x1 == 0 || res.x1 == 1 || res.x1 == 3 || strlen(name) < 3);
+    } while(res.x1 == 0 || res.x1 == 1 || res.x1 == 3 || (res.x1 == 2 && strlen(name) < 3));
 
     SDL_FreeSurface(text_surface);
     text_surface = NULL;
@@ -568,6 +571,11 @@ struct event_result save_name_check_event(SDL_Rect *button_rect, int active_butt
 bool get_save_name(char *name)
 {
     main_window.type = 5;
+    main_window.type = 3;
+    char **name_list = (char**)malloc(10 * sizeof(char*));
+    for(int i = 0; i < 10; i++)
+        name_list[i] = (char*)malloc(NAME_LEN * sizeof(char));
+    int saves_count = get_saves(name_list);
 
     //Writing some text
     TTF_Font *font = load_font_bold(36);
@@ -622,7 +630,7 @@ bool get_save_name(char *name)
                 pages[5].placeable_assets[i].cur_texture = 1;
             else
                 pages[5].placeable_assets[i].cur_texture = 0;
-            if(i == 1 && (strlen(name) < 3 || strlen(name) >= 16))
+            if(i == 1 && (strlen(name) < 3 || strlen(name) >= 16 || is_name_valid(name, name_list, saves_count)))
                 pages[5].placeable_assets[i].cur_texture = 2;
             SDL_RenderCopy(main_window.renderer, pages[5].placeable_assets[i].texture[pages[5].placeable_assets[i].cur_texture], NULL, &(pages[5].placeable_assets[i].rect));
         }
@@ -646,7 +654,7 @@ bool get_save_name(char *name)
                 name[size] = 0;
             }
         }
-    } while(res.x1 == 0 || res.x1 == 1 || res.x1 == 3 || strlen(name) < 3);
+    } while(res.x1 == 0 || res.x1 == 1 || res.x1 == 3 || (res.x1 == 2 && res.x2 == 1 && (is_name_valid(name, name_list, saves_count) || strlen(name) < 3)));
 
     SDL_FreeSurface(text_surface);
     text_surface = NULL;
@@ -746,7 +754,7 @@ bool get_load_name(char *name)
     SDL_Texture *title_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
     SDL_SetTextureBlendMode(title_texture, SDL_BLENDMODE_BLEND);
     SDL_Rect title_rect;
-    title_rect.y = 100;
+    title_rect.y = 25;
     SDL_QueryTexture(title_texture, NULL, NULL, &title_rect.w, &title_rect.h);
     title_rect.x = 640 - (title_rect.w / 2);
 
@@ -757,13 +765,13 @@ bool get_load_name(char *name)
     font = load_font_regular(24);
     SDL_Texture *name_texture;
     SDL_Rect name_rect = {360, 0, 0, 0};
-    SDL_Rect text_box1 = {350, 150, 580, 70};
-    SDL_Rect text_box2 = {350, 240, 580, 340};
+    SDL_Rect text_box1 = {350, 75, 580, 70};
+    SDL_Rect text_box2 = {350, 165, 580, 425};
     SDL_Color back_color = {0 , 100, 100, 160};
 
     SDL_Texture **list_texture = (SDL_Texture**)malloc(saves_count * sizeof(SDL_Texture*));
     SDL_Rect list_rect[saves_count];
-    int acc_height = 250;
+    int acc_height = 175;
     for(int i = 0; i < saves_count; i++){
         text_surface = TTF_RenderText_Shaded(font, name_list[i], text_color, back_color);
         list_texture[i] = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
@@ -771,7 +779,7 @@ bool get_load_name(char *name)
         list_rect[i].y = acc_height;
         SDL_QueryTexture(list_texture[i], NULL, NULL, &(list_rect[i].w), &(list_rect[i].h));
         //printf("%d %d", list_rect[i].w, list_rect[i].h);
-        acc_height += list_rect[i].h + 5;
+        acc_height += list_rect[i].h;
     }
 
     pages[3].placeable_assets[0].rect.x = 640 - (pages[3].placeable_assets[0].rect.w / 2);
@@ -826,7 +834,7 @@ bool get_load_name(char *name)
                 name[size] = 0;
             }
         }
-    } while(res.x1 == 0 || res.x1 == 1 || res.x1 == 3 || strlen(name) < 3 || !is_name_valid(name, name_list, saves_count));
+    } while(res.x1 == 0 || res.x1 == 1 || res.x1 == 3 || strlen(name) < 3 || (res.x1 == 2 && !is_name_valid(name, name_list, saves_count)));
 
     SDL_FreeSurface(text_surface);
     text_surface = NULL;
@@ -840,6 +848,193 @@ bool get_load_name(char *name)
 
 }
 
+struct event_result draw_board_check_event(struct event_result *m_loc, struct event_result pre_res, double width, SDL_Rect *button_rect, bool is_single_click)
+{
+    SDL_Event evnt;
+    struct event_result res = {0, 0, false};
+    int m, n;
+    while (!res.made_change) {
+        while (!SDL_PollEvent(&evnt))
+            SDL_Delay(10);
+        if(evnt.type == SDL_QUIT){
+            res.x1 = -1;
+            res.x2 = -1;
+            res.made_change = true;
+            break;
+        } else if(evnt.type == SDL_MOUSEMOTION){
+            if(evnt.motion.x > 10 && evnt.motion.x < 710 && evnt.motion.y > 10 && evnt.motion.y < 710) {
+                m = (int)((evnt.motion.x - 10) / width);
+                n = (int)((evnt.motion.y - 10) / width);
+                if(m_loc->x1 != m || m_loc->x2 != n){
+                    m_loc->x1 = m;
+                    m_loc->x2 = n;
+                    res.x1 = 1;
+                    res.x2 = 0;
+                    res.made_change = true;
+                    break;
+                }
+            } else {
+                if(m_loc->x1 != -1) {
+                    res.x1 = 0;
+                    res.x2 = 0;
+                    res.made_change = true;
+                    break;
+                }
+                if (evnt.motion.x >= button_rect->x && evnt.motion.x <= (button_rect->x + button_rect->w) &&
+                    evnt.motion.y >= button_rect->y && evnt.motion.y <= (button_rect->y + button_rect->h)) {
+                    if(pre_res.x1 != 2){
+                        res.x1 = 2;
+                        res.x2 = 0;
+                        res.made_change = true;
+                        break;;
+                    }
+                } else if(pre_res.x1 == 2){
+                    res.x1 = 0;
+                    res.x2 = 0;
+                    res.made_change = true;
+                    break;
+                }
+            }
+        } else if(evnt.type == SDL_MOUSEBUTTONDOWN && evnt.button.button == SDL_BUTTON_LEFT){
+            if(is_single_click){
+                res.x1 = 3;
+                res.x2 = 1;
+                res.made_change = true;
+                break;
+            } else if(pre_res.x1 == 1) {
+                res.x1 = 1;
+                res.x2 = 1;
+                res.made_change = true;
+                break;
+            } else if(pre_res.x1 == 2){
+                res.x1 = 2;
+                res.x2 = 1;
+                res.made_change = true;
+                break;
+            }
+        }
+    }
+    return res;
+}
+
+struct event_result draw_board(struct board *brd, struct player_simp *offensive, struct player_simp *defensive, bool is_res_map)
+{
+    main_window.type = 4;
+    //printf("ENTERED draw_board");
+    double width = 700.0 / brd->size;
+    TTF_Font *font = load_font_bold(48);
+    SDL_Color text_color = {255 , 180, 4, 255};
+    SDL_Surface *text_surface;
+    text_surface = TTF_RenderText_Blended(font, offensive->name, text_color);
+    SDL_Texture *o_name_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
+    SDL_FreeSurface(text_surface);
+    SDL_SetTextureBlendMode(o_name_texture, SDL_BLENDMODE_BLEND);
+    SDL_Rect o_name_rect = {850, 100, 0, 0};
+    SDL_QueryTexture(o_name_texture, NULL, NULL, &(o_name_rect.w), &(o_name_rect.h));
+
+    text_color.a = 165;
+    text_surface = TTF_RenderText_Blended(font, defensive->name, text_color);
+    SDL_Texture *d_name_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
+    SDL_FreeSurface(text_surface);
+    SDL_SetTextureBlendMode(d_name_texture, SDL_BLENDMODE_BLEND);
+    SDL_Rect d_name_rect = {850, 250, 0, 0};
+    SDL_QueryTexture(d_name_texture, NULL, NULL, &(d_name_rect.w), &(d_name_rect.h));
+
+    free(font);
+    font = load_font_regular(32);
+    text_color.a = 255;
+    char points_string[16];
+    sprintf(points_string, "%d points", offensive->points);
+    text_surface = TTF_RenderText_Blended(font, points_string, text_color);
+    SDL_Texture *o_points_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
+    SDL_FreeSurface(text_surface);
+    SDL_SetTextureBlendMode(o_points_texture, SDL_BLENDMODE_BLEND);
+    SDL_Rect o_points_rect = {850, 170, 0, 0};
+    SDL_QueryTexture(o_points_texture, NULL, NULL, &(o_points_rect.w), &(o_points_rect.h));
+
+    text_color.a = 165;
+    sprintf(points_string, "%d points", defensive->points);
+    text_surface = TTF_RenderText_Blended(font, points_string, text_color);
+    SDL_Texture *d_points_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
+    SDL_FreeSurface(text_surface);
+    SDL_SetTextureBlendMode(d_points_texture, SDL_BLENDMODE_BLEND);
+    SDL_Rect d_points_rect = {850, 320, 0, 0};
+    SDL_QueryTexture(d_points_texture, NULL, NULL, &(d_points_rect.w), &(d_points_rect.h));
+    free(font);
+    pages[4].placeable_assets[11].rect.x = 850;
+    pages[4].placeable_assets[11].rect.y = 550;
+
+    struct event_result m_loc, res = {0, 0, 0};
+    bool is_single_click;
+    do{
+        SDL_SetRenderDrawColor(main_window.renderer, 0, 0, 0, 255);
+        SDL_RenderClear(main_window.renderer);
+        SDL_RenderCopy(main_window.renderer, pages[4].background.texture[0], NULL, NULL);
+
+        SDL_RenderCopy(main_window.renderer, o_name_texture, NULL, &o_name_rect);
+        SDL_RenderCopy(main_window.renderer, o_points_texture, NULL, &o_points_rect);
+        SDL_RenderCopy(main_window.renderer, d_name_texture, NULL, &d_name_rect);
+        SDL_RenderCopy(main_window.renderer, d_points_texture, NULL, &d_points_rect);
+        int n = 0;
+        if(m_loc.x1 == -1 && m_loc.x2 == -1)
+            n = 1;
+        SDL_RenderCopy(main_window.renderer, pages[4].placeable_assets[11].texture[n], NULL, &(pages[4].placeable_assets[11].rect));
+
+        is_single_click = offensive->is_bot || is_res_map;
+
+        SDL_Rect tile_rect = {10, 10, 0, 0};
+        tile_rect.w = tile_rect.h = (int)width;
+        for(int i = 0; i < brd->size; i++){
+            tile_rect.y = 10 + ((int)width) * i;
+            for(int j = 0; j < brd->size; j++){
+                tile_rect.x = 10 + ((int)width) * j;
+                if(brd->square[i][j].is_visible){
+                    SDL_RenderCopy(main_window.renderer, pages[4].placeable_assets[9].texture[0], NULL, &tile_rect);
+                    if(brd->square[i][j].is_ship && *(brd->square[i][j].is_afloat))
+                        SDL_RenderCopy(main_window.renderer, pages[4].placeable_assets[10].texture[0], NULL, &tile_rect);
+
+                }else {
+                    if(!is_single_click && m_loc.x1 == j && m_loc.x2 == i)
+                        SDL_SetTextureColorMod(pages[4].placeable_assets[8].texture[0], 127, 127, 127);
+                    SDL_RenderCopy(main_window.renderer, pages[4].placeable_assets[8].texture[0], NULL, &tile_rect);
+                    SDL_SetTextureColorMod(pages[4].placeable_assets[8].texture[0], 255, 255, 255);
+                }
+            }
+        }
+        struct ship_list *cur_ship = brd->sunken_ships->next;
+        SDL_Rect ship_rect;
+        while (cur_ship != NULL){
+            ship_rect.x = 10 + cur_ship->loc.x * ((int)width);
+            ship_rect.y = 10 + cur_ship->loc.y * ((int)width);
+            ship_rect.h = cur_ship->ship->wid * ((int)width);
+            ship_rect.w = cur_ship->ship->len * ((int)width);
+            SDL_Point rot_point;
+            rot_point.x = ((int)(width / 2));
+            rot_point.y = ((int)(width / 2));
+            SDL_RenderCopyEx(main_window.renderer, cur_ship->ship->asset->texture[0], NULL, &ship_rect, 90 * ((4 - cur_ship->loc.dir) % 4), &rot_point, SDL_FLIP_NONE);
+
+            cur_ship = cur_ship->next;
+        }
+        SDL_RenderPresent(main_window.renderer);
+        res = draw_board_check_event(&m_loc, res, width, &(pages[4].placeable_assets[11].rect), is_single_click);
+    } while (!((res.x1 == -1 && res.x2 == -1) || res.x2 == 1) || (res.x1 == 1 && res.x2 == 1 && brd->square[m_loc.x2][m_loc.x1].is_visible));
+    struct event_result ans = {0, 0, 0};
+    if(res.x1 == -1 && res.x2 == -1){
+        ans.x1 = -1;
+        ans.x2 = -1;
+        return ans;
+    } else if(res.x1 == 1){
+        ans.x1 = m_loc.x1;
+        ans.x2 = m_loc.x2;
+        return ans;
+    } else if(res.x1 == 2){
+        ans.x1 = ans.x2 = -1;
+        return ans;
+    } else if(res.x1 == 3){
+        return ans;
+    }
+
+}
 
 /*
 struct event_result check_event()

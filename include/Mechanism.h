@@ -18,8 +18,8 @@ struct meta;
 
 //function declarations
 int hit(struct board *brd, int x, int y);
-int play_player(struct player *offensive_pl, struct board *defensive_brd);
-int play_android(struct android *bot, struct board *brd);
+int play_player(struct player *offensive_pl, struct board *defensive_brd, struct player_simp *op_simp, struct player_simp *dp_simp);
+int play_android(struct android *bot, struct board *brd, struct player_simp *bot_simp, struct player_simp *pl_simp);
 int get_first_free_int();
 bool save_enactor(void *en, bool is_bot, FILE *fout);
 void* load_enactor(bool is_bot, int *points, FILE *fin);

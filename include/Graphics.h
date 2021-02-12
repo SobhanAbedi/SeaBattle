@@ -39,6 +39,8 @@ bool get_save_name(char *name);
 struct event_result load_name_check_event(SDL_Rect *button_rect, bool button_active);
 bool is_name_valid(char *name, char **list, int list_count);
 bool get_load_name(char *name);
+struct event_result draw_board_check_event(struct event_result *m_loc, struct event_result pre_res, double width, SDL_Rect *button_rect, bool is_single_click);
+struct event_result draw_board(struct board *brd, struct player_simp *offensive, struct player_simp *defensive, bool is_res_map);
 //struct event_result check_event();
 bool run_game();
 bool close_graphics();

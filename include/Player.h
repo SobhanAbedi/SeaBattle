@@ -16,6 +16,7 @@
 //struct declarations
 struct identity;
 struct player;
+struct player_simp;
 
 //function declarations
 struct identity* get_identity(int other_player_ID);
@@ -44,6 +45,13 @@ struct player
 {
     struct identity *iden;
     struct board *brd;
+    int points;
+};
+
+struct player_simp
+{
+    bool is_bot;
+    char name[NAME_LEN];
     int points;
 };
 
