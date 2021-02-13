@@ -45,11 +45,11 @@ struct location_ext* get_location_ext(struct location *loc)
     struct location_ext* loc_ext = (struct location_ext*)malloc(sizeof(struct location_ext));
     loc_ext->x = loc->x;
     loc_ext->y = loc->y;
-    int dx_list[] = {1, 0, -1, 0}, dy_list[] = {0, -1, 0, 1};
-    loc_ext->dx_len = dx_list[loc->dir];
-    loc_ext->dy_len = dy_list[loc->dir];
-    loc_ext->dx_wid = dx_list[(loc->dir + 1) % 4];
-    loc_ext->dy_wid = dy_list[(loc->dir + 1) % 4] ;
+    int len_dx_list[] = {1, 0, -1, 0}, len_dy_list[] = {0, -1, 0, 1};
+    loc_ext->dx_len = len_dx_list[loc->dir];
+    loc_ext->dy_len = len_dy_list[loc->dir];
+    loc_ext->dx_wid = -len_dx_list[(loc->dir + 1) % 4];
+    loc_ext->dy_wid = -len_dy_list[(loc->dir + 1) % 4] ;
     return loc_ext;
 }
 

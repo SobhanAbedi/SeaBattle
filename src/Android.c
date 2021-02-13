@@ -515,14 +515,12 @@ bool E_map(struct board_min *brd, int **res_board)
             loc->x = n;
             for (int i = 0; i < brd->afloat_ships[0].wid; i++) {
                 for (int j = 0; j < brd->afloat_ships[0].len; j++) {
-                    if(i == 0 && j == 0)
-                        continue;
                     for (int k = 0; k < 4; k++) {
                         loc->dir = k;
                         loc_ext = get_location_ext(loc);
                         int x = loc_ext->x - i * (loc_ext->dx_wid) - j * (loc_ext->dx_len);
                         int y = loc_ext->y - i * (loc_ext->dy_wid) - j * (loc_ext->dy_len);
-                        if (x < 0 || y < 0 || x >= brd->size || y >= brd->size)
+                        if (x < 0 || y < 0 || x >= brd->size || y >= brd->size || brd->square[y][x].is_known)
                             continue;
                         res_board[y][x] += (max_res / pow2(i + j));
                     }
@@ -552,17 +550,18 @@ struct location get_hit_loc(struct board *brd, int max_no_ans, double max_found)
     struct location *ships_loc = (struct location*)malloc(brd_min->afloat_ship_count * sizeof(struct location));
     //printf("got location_possibility\n");
     bool ans = fill_board_itr(brd_min, loc_pos, ships_loc, 0, res_board, true, (double)max_no_ans, &total_no_ans_count, 100000, &found_count, max_found, 1);
+    bool has_Es = E_map(brd_min, res_board);
     //if(!ans)
     //    ans = fill_board_itr(brd_min, loc_pos, 0, res_board, false, &no_ans_count, max_no_ans, &found_count, 10000, 3);
     //printf("%d Answers Found\n", found_count);
     struct location max_loc, min_loc;
     max_loc.x = max_loc.y = max_loc.dir = -1;
     min_loc.x = min_loc.y = min_loc.dir = -1;
-    if(ans) {
-        if(E_map(brd_min, res_board))
+    if(ans || has_Es) {
+        if(has_Es)
             threshold = 0.9;
         else
-            threshold = 0.7;
+            threshold = 0.8;
         max_loc.x = max_loc.y = 0;
         max_loc.dir = res_board[0][0];
         min_loc.x = min_loc.y = 0;
@@ -606,6 +605,8 @@ struct location get_hit_loc(struct board *brd, int max_no_ans, double max_found)
                 }
             }
         }
+    } else{
+        get_next_location_random(brd_min, &max_loc, loc_pos, 0);
     }
     printf("%dx%d\n", max_loc.y, max_loc.x);
     for(int i = 0; i < brd_min->size; i++){

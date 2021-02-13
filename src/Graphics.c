@@ -164,14 +164,26 @@ bool init_graphics(int w, int h, int theme)
     pages[5].background.texture = NULL;
     pages[5].placeable_asset_count = 2;
     pages[5].placeable_assets = (struct asset*)malloc(pages[5].placeable_asset_count * sizeof(struct asset));
-    int n[2] = {2, 3};
+    int n5[2] = {2, 3};
     for(int i = 0; i < pages[5].placeable_asset_count; i++) {
         sprintf(name, "save_%d", i);
-        load_asset(main_path, name, n[i], -1, -1, -1, &(pages[5].placeable_assets[i]));
+        load_asset(main_path, name, n5[i], -1, -1, -1, &(pages[5].placeable_assets[i]));
     }
     printf("page 5 loaded\n");
     //loading 6:config page
-
+    pages[6].background.texture = NULL;
+    pages[6].placeable_asset_count = 6;
+    pages[6].placeable_assets = (struct asset*)malloc(pages[6].placeable_asset_count * sizeof(struct asset));
+    for(int i = 0; i < pages[6].placeable_asset_count; i++) {
+        sprintf(name, "config_%d", i);
+        int n = 2;
+        if(i == 5){
+            sprintf(name, "save_1");
+            n = 3;
+        }
+        load_asset(main_path, name, n, -1, -1, -1, &(pages[6].placeable_assets[i]));
+    }
+    printf("page 6 loaded\n");
     printf("loaded Completely\n");
 
     //Showing Splash screen
@@ -895,7 +907,7 @@ struct event_result draw_board_check_event(struct event_result *m_loc, struct ev
                         res.x1 = 2;
                         res.x2 = 0;
                         res.made_change = true;
-                        break;;
+                        break;
                     }
                 } else if(pre_res.x1 == 2){
                     res.x1 = 0;
@@ -1015,6 +1027,7 @@ struct event_result draw_board(struct board *brd, struct player_simp *offensive,
         }
         struct ship_list *cur_ship = brd->sunken_ships->next;
         SDL_Rect ship_rect;
+
         while (cur_ship != NULL){
             ship_rect.x = 10 + cur_ship->loc.x * ((int)width);
             ship_rect.y = 10 + cur_ship->loc.y * ((int)width);
@@ -1089,7 +1102,7 @@ struct event_result place_ships_check_event(struct event_result *m_loc, struct e
                         res.x1 = 2;
                         res.x2 = 0;
                         res.made_change = true;
-                        break;;
+                        break;
                     }
                 } else if(pre_res.x1 == 2){
                     res.x1 = 0;
@@ -1238,6 +1251,229 @@ int place_ships(struct board *brd, struct config_ship_list *conf_ship_list, char
     return count;
 }
 
+struct event_result config_page_check_event(struct event_result pre_res, struct asset *button)
+{
+    SDL_Event evnt;
+    struct event_result res = {0, 0, false};
+    while (!res.made_change) {
+        while (!SDL_PollEvent(&evnt))
+            SDL_Delay(10);
+
+        if(evnt.type == SDL_QUIT){
+            res.x1 = res.x2 = -1;
+            res.made_change = true;
+            break;
+        } else if(evnt.type == SDL_MOUSEMOTION){
+            for(int i = 0; i < 20; i++){
+                if (evnt.motion.x >= button[i].rect.x && evnt.motion.x <= (button[i].rect.x + button[i].rect.w) &&
+                    evnt.motion.y >= button[i].rect.y && evnt.motion.y <= (button[i].rect.y + button[i].rect.h)){
+                    if(!(pre_res.x2 == 1 && pre_res.x1 == i)){
+                        res.x1 = i;
+                        res.x2 = 1;
+                        res.made_change = true;
+                        break;
+                    }
+                } else if(pre_res.x2 == 1 && pre_res.x1 == i){
+                    res.x1 = res.x2 = 0;
+                    res.made_change = true;
+                    break;
+                }
+            }
+        } else if(evnt.type == SDL_MOUSEBUTTONDOWN && evnt.button.button == SDL_BUTTON_LEFT && pre_res.x2 == 1){
+            res.x1 = pre_res.x1;
+            res.x2 = 2;
+            res.made_change = true;
+            break;
+        }
+    }
+    return res;
+}
+
+bool config_page()
+{
+    main_window.type = 6;
+    struct asset *button = (struct asset*)malloc((2 * SHIP_COUNT + 4) * sizeof(struct asset));
+    struct ship_tmp *ship = get_ship_temps();
+    SDL_Rect *ship_rect = (SDL_Rect*)malloc(SHIP_COUNT * sizeof(SDL_Rect));
+    int ships_count[SHIP_COUNT], board_size;
+    struct config *conf = get_conf();
+    struct config_ship_list *ship_list = conf->ship_list->next;
+    for(int i = 0; i < SHIP_COUNT; i++){
+        ships_count[i] = ship_list->count;
+        ship_list = ship_list->next;
+    }
+    board_size = conf->board_size;
+    SDL_Rect *num_rect = (SDL_Rect*)malloc((2 * SHIP_COUNT + 1) * sizeof(SDL_Rect)), text_rect;
+    SDL_Surface *num_surface, *text_surface;
+    SDL_Texture *num_texture, *text_texture;
+
+    int acc_x = 130, delta = 30;
+    for(int i = 0; i < SHIP_COUNT; i++){
+        ship_rect[i].y = 220;
+        ship_rect[i].x = acc_x ;
+        ship_rect[i].w = ship[i].asset->rect.w;
+        ship_rect[i].h = ship[i].asset->rect.h;
+
+        button[i * 2].texture = pages[6].placeable_assets[0].texture;
+        button[i * 2 + 1].texture = pages[6].placeable_assets[1].texture;
+        button[i * 2].rect.w = 50;
+        button[i * 2].rect.h = 50;
+        button[i * 2].rect.x = acc_x + 10;
+        if(i == 0)
+            button[i * 2].rect.x = acc_x - 25;
+        button[i * 2].rect.y = 10;
+        num_rect[i].x = acc_x + 20;
+        if(i == 0)
+            num_rect[i].x = acc_x - 15;
+        num_rect[i].y = 70;
+        button[i * 2 + 1].rect.w = 50;
+        button[i * 2 + 1].rect.h = 50;
+        button[i * 2 + 1].rect.x = acc_x + 10;
+        if(i == 0)
+            button[i * 2 + 1].rect.x = acc_x - 25;
+        button[i * 2 + 1].rect.y = 150;
+        acc_x += 70 + delta;
+    }
+
+    button[16].texture = pages[6].placeable_assets[2].texture;
+    button[16].rect.w = button[16].rect.h = 50;
+    button[16].rect.y = 625;
+    button[16].rect.x = 400;
+    num_rect[8].x = 455;
+    num_rect[8].y = 612;
+    button[17].texture = pages[6].placeable_assets[3].texture;
+    button[17].rect.w = button[17].rect.h = 50;
+    button[17].rect.y = 625;
+    button[17].rect.x = 525;
+    button[18].texture = pages[6].placeable_assets[4].texture;
+    button[18].rect = pages[6].placeable_assets[4].rect;
+    button[18].rect.y = 600;
+    button[18].rect.x = 630;
+    button[19].texture = pages[6].placeable_assets[5].texture;
+    button[19].rect = pages[6].placeable_assets[5].rect;
+    button[19].rect.y = 600;
+    button[19].rect.x = 950;
+
+    char text[5];
+    TTF_Font *font = load_font_bold(48);
+    SDL_Color text_color = {230 , 230, 230, 255};
+    struct event_result res = {0, 0, 0};
+    bool change_made, is_valid = true;
+    int n = 0;
+    do{
+        change_made = false;
+        SDL_SetRenderDrawColor(main_window.renderer, 120, 120, 130, 255);
+        SDL_RenderClear(main_window.renderer);
+
+        for(int i = 0; i < SHIP_COUNT; i++){
+            if(res.x2 == 2 && res.x1 == i * 2 && ships_count[i] < 5) {
+                ships_count[i]++;
+                res.x2 = 1;
+                change_made = true;
+            }else if(res.x2 == 2 && res.x1 == i * 2 + 1 && ships_count[i] > 0) {
+                ships_count[i]--;
+                res.x2 = 1;
+                change_made = true;
+            }
+            SDL_Point rot_point = {35, 35};
+            SDL_RenderCopyEx(main_window.renderer, ship[i].asset->texture[0], NULL, &(ship_rect[i]), 90, &rot_point, SDL_FLIP_NONE);
+            sprintf(text, "%d", ships_count[i]);
+            num_surface = TTF_RenderText_Blended(font, text, text_color);
+            num_texture = SDL_CreateTextureFromSurface(main_window.renderer, num_surface);
+            SDL_QueryTexture(num_texture, NULL, NULL, &(num_rect[i].w), &(num_rect[i].h));
+            SDL_RenderCopy(main_window.renderer, num_texture, NULL, &(num_rect[i]));
+            //SDL_RenderCopy(main_window.renderer, pages[6].placeable_assets[0].texture[0], NULL, &(button[2 * i].rect));
+            //SDL_RenderCopy(main_window.renderer, pages[6].placeable_assets[0].texture[0], NULL, &(button[2 * i + 1].rect));
+        }
+
+        if(res.x2 == 2 && res.x1 == 16 && board_size > 5) {
+            board_size--;
+            res.x2 = 1;
+            change_made = true;
+        }else if(res.x2 == 2 && res.x1 == 17 && board_size < 20) {
+            board_size++;
+            res.x2 = 1;
+            change_made = true;
+        }
+
+        sprintf(text, "%d", board_size);
+        num_surface = TTF_RenderText_Blended(font, text, text_color);
+        num_texture = SDL_CreateTextureFromSurface(main_window.renderer, num_surface);
+        SDL_QueryTexture(num_texture, NULL, NULL, &(num_rect[8].w), &(num_rect[8].h));
+        SDL_RenderCopy(main_window.renderer, num_texture, NULL, &(num_rect[8]));
+
+        sprintf(text, "%d", board_size);
+        num_surface = TTF_RenderText_Blended(font, text, text_color);
+        num_texture = SDL_CreateTextureFromSurface(main_window.renderer, num_surface);
+        SDL_QueryTexture(num_texture, NULL, NULL, &(num_rect[8].w), &(num_rect[8].h));
+        SDL_RenderCopy(main_window.renderer, num_texture, NULL, &(num_rect[8]));
+
+        text_surface = TTF_RenderText_Blended(font, "Board Size", text_color);
+        text_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
+        SDL_QueryTexture(text_texture, NULL, NULL, &text_rect.w, &text_rect.h);
+        text_rect.y = 565;
+        text_rect.x = 487 - text_rect.w / 2;
+        SDL_RenderCopy(main_window.renderer, text_texture, NULL, &text_rect);
+
+        if(change_made){
+            struct board* brd = (struct board*)malloc(sizeof(struct board));
+            brd->size = board_size;
+            brd->square = (struct house**)malloc(brd->size * sizeof(struct house*));
+            for(int i = 0; i < brd->size; i++) {
+                brd->square[i] = (struct house*)malloc(brd->size * sizeof(struct house));
+                for (int j = 0; j < brd->size; j++) {
+                    brd->square[i][j].health = NULL;
+                    brd->square[i][j].is_ship = 0;
+                    brd->square[i][j].is_visible = 0;
+                }
+            }
+            struct location null_loc = {-1, -1, -1};
+            brd->afloat_ships = new_ship_list_ent(NULL, &null_loc);
+            struct ship_list *cur_ship = brd->afloat_ships;
+            for(int i = 0; i < SHIP_COUNT; i++){
+                for(int j = 0; j < ships_count[i]; j++){
+                    cur_ship->next = new_ship_list_ent(&(ship[i]), &null_loc);
+                    cur_ship = cur_ship->next;
+                }
+            }
+            brd->sunken_ships = new_ship_list_ent(NULL, &null_loc);
+            is_valid = can_fill_board(brd, 100000);
+            destroy_board(brd);
+            brd = NULL;
+        }
+
+        for(int i = 0; i < 20; i++) {
+            if(res.x1 == i && res.x2 == 1)
+                n = 1;
+            else
+                n = 0;
+            if(i < 16 && ((i % 2 == 0 && ships_count[i / 2] == 5) || (i % 2 == 1 && ships_count[i / 2] == 0)))
+                n = 0;
+            if(i == 16 && board_size <= 5)
+                n = 0;
+            if(i == 17 && board_size >= 20)
+                n = 0;
+            if(i == 19 && !is_valid)
+                n = 2;
+            SDL_RenderCopy(main_window.renderer, button[i].texture[n], NULL, &(button[i].rect));
+        }
+        SDL_RenderPresent(main_window.renderer);
+
+        res = config_page_check_event(res, button);
+    } while (!((res.x1 == -1 && res.x2 == -1) || (res.x2 == 2 && (res.x1 == 18 || (res.x1 == 19 && is_valid)))));
+
+    if(res.x1 == -1 && res.x2 == -1)
+        return false;
+    if(res.x2 == 2){
+        if(res.x1 == 18)
+            restore_conf();
+        if(res.x1 == 19)
+            save_conf(board_size, ships_count);
+        return true;
+    }
+
+}
+
 /*
 struct event_result check_event()
 {
@@ -1289,6 +1525,12 @@ bool run_game()
                         break;
                     case 2:
                         if(!load_game())
+                            main_window.type = -1;
+                        else
+                            main_window.type = 1;
+                        break;
+                    case 3:
+                        if(!config_page())
                             main_window.type = -1;
                         else
                             main_window.type = 1;

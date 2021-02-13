@@ -63,7 +63,7 @@ void save_conf(int size, int *count)
 
 void restore_conf()
 {
-    int size = 10, count[] = {0, 1, 1, 0, 0, 2, 3, 2};
+    int size = 10, count[] = {0, 0, 1, 0, 0, 2, 3, 4};
     save_conf(size, count);
 }
 
