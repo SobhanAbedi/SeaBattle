@@ -34,7 +34,7 @@ int check_afloat_ships(struct board *brd);
 struct ship_list* copy_ship_list(struct ship_list *list1);
 bool rem_ship_list_ent(struct ship_list *pre);
 int fill_board_random(struct board *brd, struct config_ship_list *conf_ship_list);
-struct board* init_board();
+struct board* init_board(char *name);
 bool write_ship_list2file(struct ship_list *list, FILE *fout);
 struct ship_list* read_ship_list_from_file(struct board *brd, int *points, FILE *fin);
 bool write_house2file(struct board *brd, FILE *fout);

@@ -132,7 +132,11 @@ struct player* init_player(int other_player_ID)
         free(pl);
         return NULL;
     }
-    pl->brd = init_board();
+    pl->brd = init_board(pl->iden->name);
+    if(pl->brd == NULL) {
+        free(pl);
+        return NULL;
+    }
     pl->points = 0;
     return pl;
 }

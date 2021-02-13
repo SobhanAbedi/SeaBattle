@@ -14,7 +14,7 @@ int main(int argv, char *argc[]) {
 
     close_systems();
     return 0;
-
+    /*
     struct board *brd = init_board();
     printf("%d\n", can_fill_board(brd, 1000));
 
@@ -37,5 +37,6 @@ int main(int argv, char *argc[]) {
     close_systems();
     disp_top5_players();
     show_saves(true);
-     return 0;
+    return 0;
+    */
 }

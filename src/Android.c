@@ -13,7 +13,7 @@ struct android* init_bot()
 {
     struct android* bot = (struct android*)malloc(sizeof(struct android));
     bot->points = 0;
-    bot->brd = init_board();
+    bot->brd = init_board(NULL);
     return bot;
 }
 

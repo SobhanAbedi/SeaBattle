@@ -150,12 +150,12 @@ bool init_graphics(int w, int h, int theme)
     //loading 4:game board
     strcpy(name, "board_w");
     load_asset(main_path, name, 1, -1, w, h, &pages[4].background);
-    pages[4].placeable_asset_count = 12;
+    pages[4].placeable_asset_count = 13;
     pages[4].placeable_assets = (struct asset*)malloc(pages[4].placeable_asset_count * sizeof(struct asset));
     for(int i = 0; i < pages[4].placeable_asset_count; i++){
         sprintf(name, "board_%d", i);
         int n = 1;
-        if(i == 11)
+        if(i >= 11)
             n = 2;
         load_asset(main_path, name, n,  -1, -1, -1, &(pages[4].placeable_assets[i]));
     }
@@ -1047,6 +1047,195 @@ struct event_result draw_board(struct board *brd, struct player_simp *offensive,
         return ans;
     }
     return ans;
+}
+
+struct event_result place_ships_check_event(struct event_result *m_loc, struct event_result pre_res, double width, SDL_Rect *button_rect)
+{
+    SDL_Event evnt;
+    struct event_result res = {0, 0, false};
+    int m, n;
+    while (!res.made_change) {
+        while (!SDL_PollEvent(&evnt))
+            SDL_Delay(10);
+
+        if(evnt.type == SDL_QUIT){
+            res.x1 = -1;
+            res.x2 = -1;
+            res.made_change = true;
+            break;
+        } else if(evnt.type == SDL_MOUSEMOTION){
+            if(evnt.motion.x > 10 && evnt.motion.x < 710 && evnt.motion.y > 10 && evnt.motion.y < 710) {
+                m = (int)((evnt.motion.x - 10) / width);
+                n = (int)((evnt.motion.y - 10) / width);
+                if(m_loc->x1 != m || m_loc->x2 != n){
+                    m_loc->x1 = m;
+                    m_loc->x2 = n;
+                    res.x1 = 1;
+                    res.x2 = 0;
+                    res.made_change = true;
+                    break;
+                }
+            } else {
+                if(m_loc->x1 != -1) {
+                    m_loc->x1 = m_loc->x2 = -1;
+                    res.x1 = 0;
+                    res.x2 = 0;
+                    res.made_change = true;
+                    break;
+                }
+                if (evnt.motion.x >= button_rect->x && evnt.motion.x <= (button_rect->x + button_rect->w) &&
+                    evnt.motion.y >= button_rect->y && evnt.motion.y <= (button_rect->y + button_rect->h)) {
+                    if(pre_res.x1 != 2){
+                        res.x1 = 2;
+                        res.x2 = 0;
+                        res.made_change = true;
+                        break;;
+                    }
+                } else if(pre_res.x1 == 2){
+                    res.x1 = 0;
+                    res.x2 = 0;
+                    res.made_change = true;
+                    break;
+                }
+            }
+        } else if(evnt.type == SDL_MOUSEBUTTONDOWN && evnt.button.button == SDL_BUTTON_LEFT){
+            if(pre_res.x1 == 1) {
+                res.x1 = 1;
+                res.x2 = 1;
+                res.made_change = true;
+                break;
+            } else if(pre_res.x1 == 2){
+                res.x1 = 2;
+                res.x2 = 1;
+                res.made_change = true;
+                break;
+            }
+        } else if(evnt.type == SDL_MOUSEBUTTONDOWN && evnt.button.button == SDL_BUTTON_RIGHT && pre_res.x1 == 1){
+            res.x1 = 1;
+            res.x2 = 2;
+            res.made_change = true;
+            break;
+        }
+    }
+    return res;
+}
+
+int place_ships(struct board *brd, struct config_ship_list *conf_ship_list, char *name)
+{
+    main_window.type = 4;
+    int count = 0;
+    double width = 700.0 / brd->size;
+    TTF_Font *font = load_font_bold(48);
+    SDL_Color text_color = {255 , 180, 4, 255};
+    SDL_Surface *text_surface;
+    text_surface = TTF_RenderText_Blended(font, name, text_color);
+    SDL_Texture *name_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
+    SDL_FreeSurface(text_surface);
+    SDL_SetTextureBlendMode(name_texture, SDL_BLENDMODE_BLEND);
+    SDL_Rect name_rect = {850, 100, 0, 0};
+    SDL_QueryTexture(name_texture, NULL, NULL, &(name_rect.w), &(name_rect.h));
+    free(font);
+
+    pages[4].placeable_assets[12].rect.x = 850;
+    pages[4].placeable_assets[12].rect.y = 550;
+    struct event_result m_loc, res = {0, 0, 0};
+    struct config_ship_list *cur_list;
+    struct location ship_loc = {0, 0, 0};
+    struct location null_loc = {-1, -1, -1};
+
+    if(brd->afloat_ships == NULL)
+        brd->afloat_ships = new_ship_list_ent(NULL, &null_loc);
+
+    struct ship_list *cur_ship = brd->afloat_ships;
+    while(cur_ship->next != NULL)
+        cur_ship = cur_ship->next;
+
+    do{
+        cur_list = conf_ship_list->next;
+        bool found = false;
+        while (cur_list != NULL) {
+            if(cur_list->count != 0){
+                found = true;
+                break;
+            }
+            cur_list = cur_list->next;
+        }
+        if(!found)
+            break;
+        SDL_SetRenderDrawColor(main_window.renderer, 0, 0, 0, 255);
+        SDL_RenderClear(main_window.renderer);
+        SDL_RenderCopy(main_window.renderer, pages[4].background.texture[0], NULL, NULL);
+
+        SDL_RenderCopy(main_window.renderer, name_texture, NULL, &name_rect);
+
+        int n = 0;
+        if(res.x1 == 2)
+            n = 1;
+        SDL_RenderCopy(main_window.renderer, pages[4].placeable_assets[12].texture[n], NULL, &(pages[4].placeable_assets[12].rect));
+        SDL_Rect tile_rect = {10, 10, 0, 0};
+        tile_rect.w = tile_rect.h = (int)width;
+        for(int i = 0; i < brd->size; i++) {
+            tile_rect.y = 10 + ((int) width) * i;
+            for (int j = 0; j < brd->size; j++) {
+                tile_rect.x = 10 + ((int) width) * j;
+                SDL_RenderCopy(main_window.renderer, pages[4].placeable_assets[9].texture[0], NULL, &tile_rect);
+            }
+        }
+
+        struct ship_list *cur_ship2 = brd->afloat_ships->next;
+        SDL_Rect ship_rect;
+        while (cur_ship2 != NULL){
+            ship_rect.x = 10 + cur_ship2->loc.x * ((int)width);
+            ship_rect.y = 10 + cur_ship2->loc.y * ((int)width);
+            ship_rect.h = cur_ship2->ship->wid * ((int)width);
+            ship_rect.w = cur_ship2->ship->len * ((int)width);
+            SDL_Point rot_point;
+            rot_point.x = ((int)(width / 2));
+            rot_point.y = ((int)(width / 2));
+            SDL_RenderCopyEx(main_window.renderer, cur_ship2->ship->asset->texture[0], NULL, &ship_rect, 90 * ((4 - cur_ship2->loc.dir) % 4), &rot_point, SDL_FLIP_NONE);
+            cur_ship2 = cur_ship2->next;
+        }
+
+
+        //ship_loc.x = m_loc.x1;
+        //ship_loc.y = m_loc.x2;
+        ship_rect.x = 10 + ship_loc.x * ((int)width);
+        ship_rect.y = 10 + ship_loc.y * ((int)width);
+        ship_rect.h = cur_list->ship->wid * ((int)width);
+        ship_rect.w = cur_list->ship->len * ((int)width);
+        SDL_Point rot_point;
+        rot_point.x = ((int)(width / 2));
+        rot_point.y = ((int)(width / 2));
+
+        if(can_place_ship(brd->square, brd->size, cur_list->ship, get_location_ext(&ship_loc))){
+            SDL_RenderCopyEx(main_window.renderer, cur_list->ship->asset->texture[0], NULL, &ship_rect, 90 * ((4 - ship_loc.dir) % 4), &rot_point, SDL_FLIP_NONE);
+        } else {
+            SDL_SetTextureColorMod(cur_list->ship->asset->texture[0], 255, 127, 64);
+            SDL_RenderCopyEx(main_window.renderer, cur_list->ship->asset->texture[0], NULL, &ship_rect, 90 * ((4 - ship_loc.dir) % 4), &rot_point, SDL_FLIP_NONE);
+            SDL_SetTextureColorMod(cur_list->ship->asset->texture[0], 255, 255, 255);
+        }
+        SDL_RenderPresent(main_window.renderer);
+
+        res = place_ships_check_event(&m_loc, res, width, &(pages[4].placeable_assets[12].rect));
+        if(m_loc.x1 != -1) {
+            ship_loc.x = m_loc.x1;
+            ship_loc.y = m_loc.x2;
+        }
+        if(res.x1 == 1 && res.x2 == 2)
+            ship_loc.dir = (ship_loc.dir + 1) % 4;
+        if(res.x1 == 1 && res.x2 == 1 && can_place_ship(brd->square, brd->size, cur_list->ship, get_location_ext(&ship_loc))) {
+            cur_ship->next = new_ship_list_ent(cur_list->ship, &ship_loc);
+            cur_ship = cur_ship->next;
+            if(place_ship(brd->square, brd->size, cur_ship)) {
+                cur_list->count--;
+                count++;
+            }
+        }
+
+    } while (!((res.x1 == 2 && res.x2 == 1) || (res.x1 == -1 && res.x2 == -1)));
+    if(res.x1 == -1 && res.x2 == -1)
+        return -1;
+    return count;
 }
 
 /*

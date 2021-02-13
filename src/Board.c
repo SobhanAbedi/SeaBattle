@@ -177,9 +177,13 @@ bool rem_ship_list_ent(struct ship_list *pre)
 int fill_board_random(struct board *brd, struct config_ship_list *conf_ship_list)
 {
     struct location null_loc = {-1, -1, -1};
-    brd->afloat_ships = new_ship_list_ent(NULL, &null_loc);
+    if(brd->afloat_ships == NULL)
+        brd->afloat_ships = new_ship_list_ent(NULL, &null_loc);
+    struct ship_list *ship_beg = brd->afloat_ships, *ship_beg2 = brd->afloat_ships->next;
+    while (ship_beg->next != NULL)
+        ship_beg = ship_beg->next;
     struct config_ship_list *cur_list = conf_ship_list->next;
-    struct ship_list *cur_ship = brd->afloat_ships;
+    struct ship_list *cur_ship = ship_beg;
     while(cur_list != NULL) {
         for (int i = 0; i < cur_list->count; i++) {
             cur_ship->next = new_ship_list_ent(cur_list->ship, &null_loc);
@@ -188,13 +192,17 @@ int fill_board_random(struct board *brd, struct config_ship_list *conf_ship_list
         cur_list = cur_list->next;
     }
     struct location *ships_loc;
-    int count = fill_board(brd, &ships_loc, 100);
-
-    destroy_ship_list(brd->afloat_ships);
-    brd->afloat_ships =NULL;
-    brd->afloat_ships = new_ship_list_ent(NULL, &null_loc);
+    int count = 0;
+    brd->afloat_ships->next = ship_beg->next;
+    if(brd->afloat_ships->next != NULL)
+        count = fill_board(brd, &ships_loc, 100);
+    brd->afloat_ships->next = ship_beg2;
+    destroy_ship_list(ship_beg->next);
+    ship_beg->next = NULL;
+    //brd->afloat_ships =NULL;
+    //brd->afloat_ships = new_ship_list_ent(NULL, &null_loc);
     cur_list = conf_ship_list->next;
-    cur_ship = brd->afloat_ships;
+    cur_ship = ship_beg;
     int k = 0;
     while(cur_list != NULL && k < count) {
         for (int i = 0; i < cur_list->count; i++) {
@@ -212,7 +220,7 @@ int fill_board_random(struct board *brd, struct config_ship_list *conf_ship_list
     return count;
 }
 
-struct board* init_board()
+struct board* init_board(char *name)
 {
     struct config *conf = get_conf();
     //Start get location
@@ -233,8 +241,21 @@ struct board* init_board()
             brd->square[i][j].is_visible = 0;
         }
     }
-    int k = fill_board_random(brd, conf->ship_list);
-    if (k == -1) {
+    brd->afloat_ships = NULL;
+    brd->sunken_ships = NULL;
+    int k =  0;
+    if(name != NULL) {
+        k += place_ships(brd, conf->ship_list, name);
+        if (k == -1) {
+            destroy_config_ship_list(conf->ship_list);
+            free(conf);
+            destroy_board(brd);
+            return NULL;
+        }
+    }
+    k += fill_board_random(brd, conf->ship_list);
+    printf("k = %d\n", k);
+    if (k < 0) {
         printf("Could not Initiate Board\n");
         destroy_board(brd);
         brd = NULL;
@@ -482,7 +503,7 @@ void make_board_visible(struct board *brd)
 
 void destroy_ship_list(struct ship_list *list)
 {
-    if(list->next == NULL)
+    if(list == NULL || list->next == NULL)
         return;
     destroy_ship_list(list->next);
     list->next = NULL;

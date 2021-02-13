@@ -499,11 +499,11 @@ bool run_game_pvp(struct player *pl1, struct player *pl2)
         if(state > -1)
             draw_board(defensive_pl->brd, op_simp, dp_simp, true);
     } while(state == 1);
-    if(state == 0){
-        if(save_identity(defensive_pl, 0))
+    if(state == 0 && save_identity(defensive_pl, 0)){
             printf("Looser Results Saved\n");
+        return true;
     }
-    bool res;
+    bool res = true;
     if(state == -1){
         res = save_game(offensive_pl, defensive_pl, true);
         /*
@@ -561,8 +561,9 @@ bool run_game_pvb(struct player *pl, struct android *bot)
     } while (state == 1);
     if(state == 0 && !pl_turn && save_identity(pl, 0)){
         printf("Your Results Saved\n");
+        return true;
     }
-    bool res = false;
+    bool res = true;
     if(state == -1) {
         res = save_game(pl, bot, false);
         /*
