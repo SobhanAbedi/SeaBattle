@@ -45,7 +45,9 @@ struct event_result draw_board_check_event(struct event_result *m_loc, struct ev
 struct event_result draw_board(struct board *brd, struct player_simp *offensive, struct player_simp *defensive, bool is_res_map);
 struct event_result place_ships_check_event(struct event_result *m_loc, struct event_result pre_res, double width, SDL_Rect *button_rect);
 int place_ships(struct board *brd, struct config_ship_list *conf_ship_list, char *name);
+struct event_result config_page_check_event(struct event_result pre_res, struct asset *button);
 bool config_page();
+bool show_msg(char *msg, int time);
 //struct event_result check_event();
 bool run_game();
 bool close_graphics();

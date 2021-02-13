@@ -193,22 +193,6 @@ bool init_graphics(int w, int h, int theme)
     //Drawing background
     SDL_RenderCopy(main_window.renderer, pages[0].background.texture[0],&(pages[0].background.rect), NULL);
 
-    //Writing some text
-    TTF_Font *font = load_font_bold(36);
-    SDL_Color text_color = {32, 32, 32, 255};
-    SDL_Surface *text_surface = TTF_RenderText_Blended(font, "POWERED BY SDL2", text_color);
-    SDL_Texture *text_texture = SDL_CreateTextureFromSurface(main_window.renderer, text_surface);
-    SDL_SetTextureBlendMode(text_texture, SDL_BLENDMODE_BLEND);
-    SDL_Rect text_rect;
-    text_rect.x = 950;
-    text_rect.y = 675;
-    SDL_QueryTexture(text_texture, NULL, NULL, &text_rect.w, &text_rect.h);
-    SDL_RenderCopy(main_window.renderer, text_texture, NULL, &text_rect);
-    SDL_DestroyTexture(text_texture);
-    SDL_FreeSurface(text_surface);
-    text_texture = NULL;
-    text_surface = NULL;
-
     //presenting the result
     SDL_RenderPresent(main_window.renderer);
     SDL_Delay(1000);
@@ -276,7 +260,17 @@ int load_menu()
     }
     int active_button = -1;
     struct event_result res;
+
     TTF_Font *font = load_font_bold(36);
+    SDL_Color sdl_text_color = {32, 32, 32, 255};
+    SDL_Surface *sdl_text_surface = TTF_RenderText_Blended(font, "POWERED BY SDL2", sdl_text_color);
+    SDL_Texture *sdl_text_texture = SDL_CreateTextureFromSurface(main_window.renderer, sdl_text_surface);
+    SDL_SetTextureBlendMode(sdl_text_texture, SDL_BLENDMODE_BLEND);
+    SDL_Rect sdl_text_rect;
+    sdl_text_rect.x = 950;
+    sdl_text_rect.y = 675;
+    SDL_QueryTexture(sdl_text_texture, NULL, NULL, &sdl_text_rect.w, &sdl_text_rect.h);
+
     SDL_Color back_color = {0, 150, 150, 150};
     SDL_Color text_color = {255, 255, 255, 255};
     //SDL_Surface *text_surface = TTF_RenderText_Shaded(font, "TOP 5 PLAYERS:\nSobhan", text_color, back_color);
@@ -314,6 +308,7 @@ int load_menu()
         SDL_SetRenderDrawColor(main_window.renderer, 0, 0, 0, 0);
         SDL_RenderClear(main_window.renderer);
         SDL_RenderCopy(main_window.renderer, pages[1].background.texture[0], &(pages[1].background.rect), NULL);
+        SDL_RenderCopy(main_window.renderer, sdl_text_texture, NULL, &sdl_text_rect);
 
         SDL_SetRenderDrawColor(main_window.renderer, 0, 150, 150, 255);
         SDL_RenderFillRect(main_window.renderer, &text_box);
@@ -585,7 +580,6 @@ struct event_result save_name_check_event(SDL_Rect *button_rect, int active_butt
 bool get_save_name(char *name)
 {
     main_window.type = 5;
-    main_window.type = 3;
     char **name_list = (char**)malloc(10 * sizeof(char*));
     for(int i = 0; i < 10; i++)
         name_list[i] = (char*)malloc(NAME_LEN * sizeof(char));
@@ -1472,6 +1466,36 @@ bool config_page()
         return true;
     }
 
+}
+
+bool show_msg(char *msg, int time)
+{
+    main_window.type = 5;
+
+    //Writing some text
+    TTF_Font *font = load_font_bold(48);
+    SDL_Color text_color = {200 , 200, 200, 255};
+    SDL_Surface *msg_surface = TTF_RenderText_Blended(font, msg, text_color);
+    SDL_Texture *msg_texture = SDL_CreateTextureFromSurface(main_window.renderer, msg_surface);
+    SDL_SetTextureBlendMode(msg_texture, SDL_BLENDMODE_BLEND);
+    SDL_Rect msg_rect;
+    msg_rect.y = 320;
+    SDL_QueryTexture(msg_texture, NULL, NULL, &msg_rect.w, &msg_rect.h);
+    msg_rect.x = 640 - (msg_rect.w / 2);
+
+    SDL_SetRenderDrawColor(main_window.renderer, 120, 120, 130, 255);
+    SDL_RenderClear(main_window.renderer);
+
+    SDL_RenderCopy(main_window.renderer, msg_texture, NULL, &msg_rect);
+    SDL_RenderPresent(main_window.renderer);
+    SDL_Delay(time);
+
+    SDL_FreeSurface(msg_surface);
+    msg_surface = NULL;
+    free(font);
+    SDL_DestroyTexture(msg_texture);
+    msg_texture = NULL;
+    return true;
 }
 
 /*

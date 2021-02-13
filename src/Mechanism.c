@@ -68,9 +68,16 @@ int play_player(struct player *offensive_pl, struct board *defensive_brd, struct
             //draw_board(defensive_brd, op_simp, dp_simp, true);
             if(defensive_brd->afloat_ships->next == NULL){
                 printf("You Won :D\n");
+                char win_msg[NAME_LEN];
+                if(dp_simp->is_bot){
+                    strcpy(win_msg, "You Won");
+                }else{
+                    sprintf(win_msg, "%s Won", offensive_pl->iden->name);
+                }
                 make_board_visible(defensive_brd);
                 disp_board_fast(defensive_brd, 0);
                 draw_board(defensive_brd, op_simp, dp_simp, true);
+                show_msg(win_msg, 2000);
                 if(save_identity(offensive_pl, 1))
                     printf("Winner Results Saved\n");
                 return 0;
@@ -124,6 +131,7 @@ int play_android(struct android *bot, struct board *brd, struct player_simp *bot
                 make_board_visible(brd);
                 disp_board_fast(brd, 0);
                 draw_board(brd, bot_simp, pl_simp, true);
+                show_msg("Bot Won", 2000);
                 return 0;
             }
         } else {
@@ -339,6 +347,7 @@ bool load_game()
         return false;
     if(name[0] == 0){
         printf("There are No Saves\n");
+        show_msg("There are No Saves", 2000);
         return true;
     }
 
@@ -496,7 +505,7 @@ bool run_game_pvp(struct player *pl1, struct player *pl2)
         dp_simp = tp_simp;
 
         state = play_player(offensive_pl, defensive_pl->brd, op_simp, dp_simp);
-        if(state > -1)
+        if(state == 1)
             draw_board(defensive_pl->brd, op_simp, dp_simp, true);
     } while(state == 1);
     if(state == 0 && save_identity(defensive_pl, 0)){
@@ -552,7 +561,7 @@ bool run_game_pvb(struct player *pl, struct android *bot)
         pl_turn = !pl_turn;
         if(pl_turn) {
             state = play_player(pl, bot->brd, &pl_simp, &bot_simp);
-            if(state > -1 )
+            if(state == 1 )
                 draw_board(bot->brd, &pl_simp, &bot_simp, true);
         } else {
             draw_board(pl->brd, &bot_simp, &pl_simp, true);
