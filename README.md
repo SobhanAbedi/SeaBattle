@@ -34,13 +34,7 @@ This game requires resources from SDL2 Library. The following packages are neede
 To compile the provided code, the lib directories from all three packages should be combined into a single lib directory and placed at the root of the project.   
 
 ## To Run
-In order to run the provided <a href="bin/SeaBattle.exe">executable</a> the following dll files should be added to the same path as the executable.
-- libfreetype-6.dll
-- libpng16-16.dll
-- SDL2.dll
-- SDL2_image.dll
-- SDL2_ttf.dll
-- zlib1.dll
+The provided <a href="bin/SeaBattle.exe">executable</a> can be run in the given file structure, and it's not a portable standalone file. The provided DLLs and the <a href="/resources">resources</a> directory are also required.
 
 ## Assets
 All the assets used in this game are licensed under free creative commons license.
