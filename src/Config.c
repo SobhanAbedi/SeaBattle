@@ -6,6 +6,7 @@
 #include <time.h>
 #include "Config.h"
 #include "Board.h"
+#include "Graphics.h"
 
 //File Specific Global Variable
 struct ship_tmp *ship_tmps;
@@ -13,20 +14,22 @@ struct ship_tmp *ship_tmps;
 //function definitions
 void init_ship_tmps()
 {
+    struct asset *assets = get_board_assets();
     static bool is_first = true;
     if(is_first) {
         int len[] = {7, 6, 5, 4, 4, 3, 2, 1}, wid[] = {2, 1, 1, 1, 1, 1, 1, 1}, points[] = {5, 6, 7, 9, 9, 12, 17, 35};
         ship_tmps = (struct ship_tmp*)malloc(SHIP_COUNT * sizeof(struct ship_tmp));
         for (int i = 0; i < SHIP_COUNT; i++)
-            ship_tmps[i] = new_ship_tmp(len[i], wid[i], points[i]);
+            ship_tmps[i] = new_ship_tmp(len[i], wid[i], points[i], &(assets[i]));
         is_first = false;
     }
 }
 
 void init_systems()
 {
-    init_ship_tmps();
     srand(time(NULL));
+    init_graphics(1280, 720, 0);
+    init_ship_tmps();
 }
 
 struct config_ship_list* new_config_ship_list_ent(struct ship_tmp *ship, int count)
@@ -98,4 +101,7 @@ struct config* get_conf()
 void close_systems()
 {
     free(ship_tmps);
+    //don't free textures here. they should be freed in close_graphics();
+    ship_tmps = NULL;
+    close_graphics();
 }

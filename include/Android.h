@@ -5,7 +5,10 @@
 #ifndef SEABATTLE_ANDROID_H
 #define SEABATTLE_ANDROID_H
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include "Config.h"
 #include "Board.h"
 
 

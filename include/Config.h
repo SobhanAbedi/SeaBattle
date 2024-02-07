@@ -7,7 +7,11 @@
 
 #define SHIP_COUNT 8
 
-#include "Board.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include "Config.h"
+#include "Graphics.h"
 
 //struct declarations
 struct config_ship_list;

@@ -8,9 +8,17 @@
 #include <string.h>
 #include "Player.h"
 #include "Board.h"
+#include "Graphics.h"
 
 struct identity* get_identity(int other_player_ID)
 {
+    char name[NAME_LEN];
+    strcpy(name, "Player 1");
+    //printf("Enter Your Name: ");
+    //fflush(stdin);
+    //gets(name);
+    if(!get_name(name))
+        return NULL;
     FILE *fin = fopen("../resources/players/players", "rb");
     if(fin == NULL){
         FILE *fout = fopen("../resources/players/players", "wb");
@@ -22,10 +30,6 @@ struct identity* get_identity(int other_player_ID)
         }
     }
     int last_ID;
-    char name[NAME_LEN];
-    printf("Enter Your Name: ");
-    fflush(stdin);
-    gets(name);
     struct identity *iden = (struct identity*)malloc(sizeof(struct identity));
     while(fread(iden, sizeof(struct identity), 1, fin)){
         if(strcmp(name, iden->name) == 0){
@@ -124,7 +128,15 @@ struct player* init_player(int other_player_ID)
 {
     struct player *pl = (struct player*)malloc(sizeof(struct player));
     pl->iden = get_identity(other_player_ID);
-    pl->brd = init_board();
+    if(pl->iden == NULL) {
+        free(pl);
+        return NULL;
+    }
+    pl->brd = init_board(pl->iden->name);
+    if(pl->brd == NULL) {
+        free(pl);
+        return NULL;
+    }
     pl->points = 0;
     return pl;
 }
@@ -174,6 +186,50 @@ void disp_top5_players()
     }
     free(iden_list);
     free(iden_read);
+}
+
+char** get_top5_players()
+{
+    int n = 5;
+    FILE *fin = fopen("../resources/players/players", "rb");
+    if(fin == NULL) {
+        FILE *fout = fopen("../resources/players/players", "wb");
+        fclose(fout);
+        fin = fopen("../resources/players/players", "rb");
+        if(fin == NULL){
+            printf("Could Not Open Players File\n");
+            return NULL;
+        }
+        printf("There are no player yet\n");
+        return NULL;
+    }
+    struct identity *iden_list = (struct identity*)malloc(n * sizeof(struct identity));
+    struct identity *iden_read = (struct identity*)malloc(sizeof(struct identity));
+    for(int i = 0; i < n; i++){
+        iden_list[i].ID = -1;
+    }
+    while(fread(iden_read, sizeof(struct identity), 1, fin)){
+        for(int i = 0; i < n; i++){
+            if(iden_read->points > iden_list[i].points || iden_list[i].ID == -1){
+                for(int j = n - 1; j > i; j--){
+                    iden_list[j] = iden_list[j - 1];
+                }
+                iden_list[i] = *iden_read;
+                break;
+            }
+        }
+    }
+    char **list = (char**)malloc(5 * sizeof(char*));
+    for(int i = 0; i < 5; i++) {
+        list[i] = (char*)malloc(NAME_LEN * sizeof(char));
+        strcpy(list[i], "\0");
+    }
+    for(int i = 0; i < n && iden_list[i].ID != -1; i++){
+        sprintf(list[i], "%d: %s, %dp", i + 1, iden_list[i].name, iden_list[i].points);
+    }
+    free(iden_list);
+    free(iden_read);
+    return list;
 }
 
 bool write_player2file(struct player *pl, FILE *fout)

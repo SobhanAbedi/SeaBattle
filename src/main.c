@@ -1,14 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "Graphics.h"
 #include "Board.h"
 #include "Config.h"
 #include "Player.h"
 #include "Android.h"
 #include "Mechanism.h"
 
-int main() {
+int main(int argv, char *argc[]) {
     init_systems();
 
+    run_game();
+
+    close_systems();
+    return 0;
+    /*
     struct board *brd = init_board();
     printf("%d\n", can_fill_board(brd, 1000));
 
@@ -31,5 +37,6 @@ int main() {
     close_systems();
     disp_top5_players();
     show_saves(true);
-     return 0;
+    return 0;
+    */
 }

@@ -5,8 +5,13 @@
 #ifndef SEABATTLE_BOARD_H
 #define SEABATTLE_BOARD_H
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include "Config.h"
+#include "SDL2/SDL.h"
+#include "Graphics.h"
+
 
 //struct declarations
 struct ship_tmp;
@@ -14,10 +19,12 @@ struct location;
 struct location_ext;
 struct ship_list;
 struct house;
+struct house_min;
 struct board;
+struct board_min;
 
 //function declarations
-struct ship_tmp new_ship_tmp(int len, int wid, int points);
+struct ship_tmp new_ship_tmp(int len, int wid, int points, struct asset *ast);
 struct ship_list* new_ship_list_ent(struct ship_tmp *ship, struct location *ploc);
 struct location_ext* get_location_ext(struct location *loc);
 bool can_place_ship(struct house** square, int board_size, struct ship_tmp *ship, struct location_ext *loc);
@@ -27,7 +34,7 @@ int check_afloat_ships(struct board *brd);
 struct ship_list* copy_ship_list(struct ship_list *list1);
 bool rem_ship_list_ent(struct ship_list *pre);
 int fill_board_random(struct board *brd, struct config_ship_list *conf_ship_list);
-struct board* init_board();
+struct board* init_board(char *name);
 bool write_ship_list2file(struct ship_list *list, FILE *fout);
 struct ship_list* read_ship_list_from_file(struct board *brd, int *points, FILE *fin);
 bool write_house2file(struct board *brd, FILE *fout);
@@ -45,6 +52,7 @@ void destroy_board_min(struct board_min *brd, bool is_final);
 //struct definitions
 struct ship_tmp{
     int len, wid, points;
+    struct asset *asset;
 };
 
 struct location{
